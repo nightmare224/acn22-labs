@@ -21,6 +21,6 @@ num_switches = 245
 num_ports = 14
 
 ft_topo = topo.Fattree(num_ports)
-jf_topo = topo.Jellyfish(num_servers, num_switches, num_ports)
+# jf_topo = topo.Jellyfish(num_servers, num_switches, num_ports)
 
 # TODO: code for reproducing Figure 1(c) in the jellyfish paper

@@ -65,7 +65,7 @@ class Jellyfish:
 		self.generate(num_servers, num_switches, num_ports)
 
 	def generate(self, num_servers, num_switches, num_ports):
-		
+		pass
 		# TODO: code for generating the jellyfish topology
 
 
@@ -78,5 +78,81 @@ class Fattree:
 		self.generate(num_ports)
 
 	def generate(self, num_ports):
+		# k pod
+		self.k = num_ports
+		# (2/k)*(2/k) core nodes matrix
+		core_switch = self._generate_core_switch()
+		# add core_switch to switches 
+		for cs_row in core_switch:
+			self.switches.extend(cs_row)
 
-		# TODO: code for generating the fat-tree topology
+		for pod_id in range(self.k):
+			upper_layer, lower_layer = self._generate_pod(pod_id)
+			host = self._generate_host(pod_id)
+			# link upper pod switch and core switch
+			for cs_row_id, cs_row in enumerate(core_switch):
+				for cs in cs_row:
+					cs.add_edge(upper_layer[cs_row_id])
+			# link lower pod switch and host
+			for host_group_id, ps in enumerate(lower_layer):
+				for h in host[host_group_id]:
+					ps.add_edge(h)
+			# add pod_switch to switches
+			self.switches.extend(upper_layer)
+			self.switches.extend(lower_layer)
+			# add host to servers
+			for host_group in host:
+				self.servers.extend(host_group)
+
+	def _generate_core_switch(self):
+		# (k/2)*(k/2)
+		core_switch = []
+		for j in range(self.k//2):
+			cs_row = []
+			for i in range(self.k//2):
+				cs_row.append(
+					Node(
+						# 10.k.j.i
+						id = f"10.{self.k}.{j}.{i}", 
+						type = "core_switch"
+					)
+				)
+			core_switch.append(cs_row)
+		return core_switch
+
+	def _generate_pod(self, pod_id):
+		upper_layer = []
+		lower_layer = []
+		for s in range(self.k):
+			switch = Node(
+				# 10.pod.switch.1
+				id = f"10.{pod_id}.{s}.1",
+				type = "pod_switch"
+			)
+			if s < self.k//2:
+				lower_layer.append(switch)
+			else:
+				upper_layer.append(switch)
+		# link upper and lower lay
+		for i in range(self.k//2):
+			for j in range(self.k//2):
+				upper_layer[i].add_edge(lower_layer[j])
+		
+		return upper_layer, lower_layer
+
+	def _generate_host(self, pod_id):
+		host = []
+		for s in range(self.k//2):
+			host_group = []
+			for id in range(2, self.k//2 + 2):
+				host_group.append(
+					Node(
+						# 10.pod.switch.ID
+						id = f"10.{pod_id}.{s}.{id}",
+						type = "host"
+					)
+				)
+			host.append(host_group)
+
+		return host
+		
