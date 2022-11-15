@@ -71,22 +71,26 @@ class Jellyfish:
 
 class Fattree:
     def __init__(self, num_ports):
+        # k pod
+        self.k = num_ports
         self.servers = []
         self.switches = []
         self.generate(num_ports)
 
     def generate(self, num_ports):
-        # k pod
-        self.k = num_ports
-        # (2/k)*(2/k) core nodes matrix
+        # create core switch
         core_switch = self._generate_core_switch()
         # add core_switch to switches
         for cs_row in core_switch:
             self.switches.extend(cs_row)
 
+        # create pod and link host and core switch
         for pod_id in range(self.k):
+            # create pod switch
             upper_layer, lower_layer = self._generate_pod(pod_id)
+            # create host
             host = self._generate_host(pod_id)
+
             # link upper pod switch and core switch
             for cs_row_id, cs_row in enumerate(core_switch):
                 for cs in cs_row:
@@ -95,6 +99,7 @@ class Fattree:
             for host_group_id, ps in enumerate(lower_layer):
                 for h in host[host_group_id]:
                     ps.add_edge(h)
+
             # add pod_switch to switches
             self.switches.extend(upper_layer)
             self.switches.extend(lower_layer)
@@ -103,7 +108,7 @@ class Fattree:
                 self.servers.extend(host_group)
 
     def _generate_core_switch(self):
-        # (k/2)*(k/2)
+        # (k/2)*(k/2) core nodes matrix
         core_switch = []
         for j in range(self.k // 2):
             cs_row = []
@@ -131,7 +136,8 @@ class Fattree:
                 lower_layer.append(switch)
             else:
                 upper_layer.append(switch)
-        # link upper and lower lay
+                
+        # link upper and lower layer
         for i in range(self.k // 2):
             for j in range(self.k // 2):
                 upper_layer[i].add_edge(lower_layer[j])
