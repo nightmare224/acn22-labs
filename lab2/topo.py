@@ -60,13 +60,94 @@ class Node:
 
 class Jellyfish:
     def __init__(self, num_servers, num_switches, num_ports):
+        # number of port
+        self.k = num_ports
+        # number of switch
+        self.n = num_switches
+        # number of port connect to other switch ( n(k-r) >= num_server )
+        self.r = int(self.k - num_servers / self.n)
+
         self.servers = []
-        self.switches = []
+        self.switches = [Node(id=id, type="switch") for id in range(self.n)]
+        # still have free port to link or not stable
+        self.unstable_switches = [s for s in self.switches]
+        # no link can be add to this switch
+        self.stable_switches = []
         self.generate(num_servers, num_switches, num_ports)
 
+        # for count, sw in enumerate(self.stable_switches):
+        #     print(count, sw.id)
+        #     for e in sw.edges:
+        #         print("\t", e.lnode.id, e.rnode.id)
+
     def generate(self, num_servers, num_switches, num_ports):
-        pass
-        # TODO: code for generating the jellyfish topology
+        while 1:
+            invalid_switch = None
+            # no more unstable_switches
+            if not self._link_random_pair():
+                # check if any switch remains >=2 free port
+                for s in self.stable_switches:
+                    if self.r - len(s.edges) >= 2:
+                        invalid_switch = s
+                        self._move_to_unstable_switches(invalid_switch)
+                        break
+                if invalid_switch is None:
+                    break
+                # choose random edge to remove
+                else:
+                    random_sw = self.stable_switches[
+                        random.randint(0, len(self.stable_switches) - 1)
+                    ]
+                    random_edge = random_sw.edges[
+                        random.randint(0, len(random_sw.edges) - 1)
+                    ]
+                    # link invalid switch with two selected node
+                    random_edge.lnode.add_edge(invalid_switch)
+                    random_edge.rnode.add_edge(invalid_switch)
+                    # remove selected node original edge
+                    random_sw.remove_edge(random_edge)
+
+    def _link_random_pair(self):
+        # if only one left need remove and add
+        while 1:
+            # if no more unstable_switches, return False
+            if not self.unstable_switches:
+                return False
+            s1 = self.unstable_switches[
+                random.randint(0, len(self.unstable_switches) - 1)
+            ]
+            linkable_switches = self._get_linkable_switches(s1)
+            # move switch to stable list if cannot link to anyone
+            if linkable_switches:
+                s2 = linkable_switches[random.randint(0, len(linkable_switches) - 1)]
+                # print(s1.id, s2.id)
+                s1.add_edge(s2)
+                # check if no free port after add edge
+                if len(s1.edges) == self.r:
+                    self._move_to_stable_switches(s1)
+                if len(s2.edges) == self.r:
+                    self._move_to_stable_switches(s2)
+                break
+            else:
+                self._move_to_stable_switches(s1)
+
+        return True
+
+    def _move_to_stable_switches(self, switch):
+        self.unstable_switches.remove(switch)
+        self.stable_switches.append(switch)
+
+    def _move_to_unstable_switches(self, switch):
+        self.stable_switches.remove(switch)
+        self.unstable_switches.append(switch)
+
+    def _get_linkable_switches(self, node):
+        linkable_switches = []
+        for s in self.unstable_switches:
+            # not neighbor and still have free port
+            if not node.is_neighbor(s):
+                linkable_switches.append(s)
+        return linkable_switches
 
 
 class Fattree:
@@ -136,7 +217,7 @@ class Fattree:
                 lower_layer.append(switch)
             else:
                 upper_layer.append(switch)
-                
+
         # link upper and lower layer
         for i in range(self.k // 2):
             for j in range(self.k // 2):
