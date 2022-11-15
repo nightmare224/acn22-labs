@@ -67,7 +67,7 @@ class Jellyfish:
         # number of port connect to other switch ( n(k-r) >= num_server )
         self.r = int(self.k - num_servers / self.n)
 
-        self.servers = []
+        self.servers = [Node(id=id, type="host") for id in range(num_servers)]
         self.switches = [Node(id=id, type="switch") for id in range(self.n)]
         # still have free port to link or not stable
         self.unstable_switches = [s for s in self.switches]
@@ -77,8 +77,8 @@ class Jellyfish:
 
         # for count, sw in enumerate(self.stable_switches):
         #     print(count, sw.id)
-        #     for e in sw.edges:
-        #         print("\t", e.lnode.id, e.rnode.id)
+        #     for ec, e in enumerate(sw.edges):
+        #         print("\t", ec, e.lnode.id, e.rnode.id)
 
     def generate(self, num_servers, num_switches, num_ports):
         while 1:
@@ -106,6 +106,18 @@ class Jellyfish:
                     random_edge.rnode.add_edge(invalid_switch)
                     # remove selected node original edge
                     random_sw.remove_edge(random_edge)
+
+        self._link_host_with_switch(num_servers)
+
+    def _link_host_with_switch(self, num_servers):
+        host_id = 0
+        for _ in range(self.k - self.r):
+            for switch in self.switches:
+                switch.add_edge(self.servers[host_id])
+                host_id += 1
+                if host_id == num_servers:
+                    return
+
 
     def _link_random_pair(self):
         # if only one left need remove and add
