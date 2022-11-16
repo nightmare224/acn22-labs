@@ -1,4 +1,15 @@
 from topo import Edge
+from heapq import heappush, heappop
+
+class info:
+    def __init__(self, node):
+        self.node = node
+        self.visited = False
+        self.path_length = float('inf')
+        self.path = []
+    
+    def __lt__(self, other_info):
+        return self.path_length < other_info.path_length
 
 class Dijkstra:
 
@@ -10,30 +21,27 @@ class Dijkstra:
 
     # list of edge
     def get_path(self, n1, n2):
-        return self.path[(n1.id, n2.id)]
+        return self.path[(n1, n2)]
 
     def get_path_length(self, n1, n2):
-        return len(self.path[(n1.id, n2.id)])
+        return len(self.path[(n1, n2)])
 
     def __dijkstra(self, index):
-        nodes_info = [[node, False, float('inf'), []] for node in self.nodes]
-        nodes_info[index][2] = 0
-        while 1:
-            next_index = -1
-            for i in range(len(nodes_info)):
-                if nodes_info[i][1] == False and (next_index == -1 or nodes_info[i][2] < nodes_info[next_index][2]):
-                    next_index = i
-            if next_index == -1:
-                break
-            nodes_info[next_index][1] = True
-            connect_node = {edge.lnode for edge in nodes_info[next_index][0].edges}.union({edge.rnode for edge in nodes_info[next_index][0].edges})
-            connect_node.remove(nodes_info[next_index][0])
-            for i in range(len(nodes_info)):
-                if nodes_info[i][0] in connect_node and nodes_info[i][1] == False:
-                    if nodes_info[i][2] > nodes_info[next_index][2] + 1:
-                        nodes_info[i][2] = nodes_info[next_index][2] + 1
-                        nodes_info[i][3] = nodes_info[next_index][3] + [Edge()]
-                        nodes_info[i][3][-1].lnode = nodes_info[next_index][0]
-                        nodes_info[i][3][-1].rnode = nodes_info[i][0]
+        nodes_info = [info(node) for node in self.nodes]
+        nodes_info[index].path_length = 0
+        heap = []
+        heappush(heap, nodes_info[index])
+        while heap:
+            curr_node_info = heappop(heap)
+            curr_node_info.visited = True
+            connect_nodes = {edge.lnode if edge.rnode is curr_node_info.node else edge.rnode for edge in curr_node_info.node.edges}
+            connect_nodes_info = {node_info for node_info in nodes_info if node_info.node in connect_nodes}
+            for connect_node_info in connect_nodes_info:
+                if connect_node_info.visited == False and connect_node_info.path_length > curr_node_info.path_length + 1:
+                    connect_node_info.path_length = curr_node_info.path_length + 1
+                    connect_node_info.path = curr_node_info.path + [Edge()]
+                    connect_node_info.path[-1].lnode = curr_node_info.node
+                    connect_node_info.path[-1].rnode = connect_node_info.node
+                    heappush(heap, connect_node_info)
         for node_info in nodes_info:
-            self.path[(self.nodes[index].id, node_info[0].id)] = node_info[3]
+            self.path[(self.nodes[index], node_info.node)] = node_info.path
