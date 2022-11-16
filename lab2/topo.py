@@ -67,8 +67,8 @@ class Jellyfish:
         # number of port connect to other switch ( n(k-r) >= num_server )
         self.r = int(self.k - num_servers / self.n)
 
-        self.servers = [Node(id=id, type="host") for id in range(num_servers)]
         self.switches = [Node(id=id, type="switch") for id in range(self.n)]
+        self.servers = [Node(id=id, type="host") for id in range(self.n, self.n + num_servers)]
         # still have free port to link or not stable
         self.unstable_switches = [s for s in self.switches]
         # no link can be add to this switch
