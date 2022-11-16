@@ -3,9 +3,9 @@ import topo
 from os import getcwd
 
 
-# Same setup for Jellyfish and Fattree
 print("=====Genrate Fat-Tree topology and visualize=====")
-num_ports = int(input("Input the number of port: "))
+num_ports = 14
+num_ports = int(input(f"Input the number of port (default {num_ports} ports): "))
 
 # Fat Tree
 ft_topo = topo.Fattree(num_ports)
@@ -18,7 +18,7 @@ for switch in ft_topo.switches:
     elif switch.type == "pod_switch":
         pod_switch.append(switch)
 
-# Create traces
+# figure init
 fig = go.Figure()
 
 show_legend_flag = {"pod_switch": True, "core_switch": True, "host": True}
@@ -133,10 +133,9 @@ for switch in pod_switch:
             )
         show_legend_flag[s2.type] = False
 
-# fig.update_layout(
-#     title_text=f"Fat-Tree Topology, k = {num_ports}"
-# )
+
 fig.update_layout(
+    title_text=f"Fat-Tree Topology, k = {num_ports}",
     legend=dict(font=dict(size = 24), orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
 )
 
