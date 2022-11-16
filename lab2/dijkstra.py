@@ -25,7 +25,7 @@ class Dijkstra:
         return self.path[(n1, n2)]
 
     def get_path_length(self, n1, n2):
-        return len(self.path[(n1, n2)])
+        return len(self.path[(n1, n2)][0])
 
     def __dijkstra(self, index):
         nodes_info = [info(node) for node in self.nodes]
