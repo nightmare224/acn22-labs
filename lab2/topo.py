@@ -110,12 +110,12 @@ class Jellyfish:
         self._link_host_with_switch(num_servers)
 
     def _link_host_with_switch(self, num_servers):
-        host_id = 0
+        host_count = 0
         for _ in range(self.k - self.r):
             for switch in self.switches:
-                switch.add_edge(self.servers[host_id])
-                host_id += 1
-                if host_id == num_servers:
+                switch.add_edge(self.servers[host_count])
+                host_count += 1
+                if host_count == num_servers:
                     return
 
 
@@ -203,9 +203,9 @@ class Fattree:
     def _generate_core_switch(self):
         # (k/2)*(k/2) core nodes matrix
         core_switch = []
-        for j in range(self.k // 2):
+        for j in range(1, self.k // 2 + 1):
             cs_row = []
-            for i in range(self.k // 2):
+            for i in range(1, self.k // 2 + 1):
                 cs_row.append(
                     Node(
                         # 10.k.j.i
