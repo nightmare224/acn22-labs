@@ -19,9 +19,9 @@ import queue
 
 # Class for an edge in the graph
 class Edge:
-    def __init__(self):
-        self.lnode = None
-        self.rnode = None
+    def __init__(self, lnode=None, rnode=None):
+        self.lnode = lnode
+        self.rnode = rnode
 
     def remove(self):
         self.lnode.edges.remove(self)

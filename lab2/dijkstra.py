@@ -14,6 +14,7 @@ class info:
 class Dijkstra:
 
     def __init__(self, hosts, switches):
+        self.num_switches = len(switches)
         self.nodes = switches + hosts
         self.path = {}
         for i in range(len(self.nodes)):
@@ -37,11 +38,21 @@ class Dijkstra:
             connect_nodes = {edge.lnode if edge.rnode is curr_node_info.node else edge.rnode for edge in curr_node_info.node.edges}
             connect_nodes_info = {node_info for node_info in nodes_info if node_info.node in connect_nodes}
             for connect_node_info in connect_nodes_info:
-                if connect_node_info.visited == False and connect_node_info.path_length > curr_node_info.path_length + 1:
-                    connect_node_info.path_length = curr_node_info.path_length + 1
-                    connect_node_info.path = curr_node_info.path + [Edge()]
-                    connect_node_info.path[-1].lnode = curr_node_info.node
-                    connect_node_info.path[-1].rnode = connect_node_info.node
-                    heappush(heap, connect_node_info)
-        for node_info in nodes_info:
-            self.path[(self.nodes[index], node_info.node)] = node_info.path
+                if connect_node_info.visited == False:
+                    if connect_node_info.path_length > curr_node_info.path_length + 1:
+                        connect_node_info.path_length = curr_node_info.path_length + 1
+                        connect_node_info.path.clear()
+                        if curr_node_info.path:
+                            for path in curr_node_info.path:
+                                connect_node_info.path.append(path + (Edge(curr_node_info.node, connect_node_info.node),))
+                        else:
+                            connect_node_info.path.append((Edge(curr_node_info.node, connect_node_info.node),))
+                        heappush(heap, connect_node_info)
+                    elif connect_node_info.path_length == curr_node_info.path_length + 1:
+                        if curr_node_info.path:
+                            for path in curr_node_info.path:
+                                connect_node_info.path.append(path + (Edge(curr_node_info.node, connect_node_info.node),))
+                        else:
+                            connect_node_info.path.append((Edge(curr_node_info.node, connect_node_info.node),))
+        for i in range(self.num_switches, len(self.nodes)):
+            self.path[(self.nodes[index], nodes_info[i].node)] = nodes_info[i].path
