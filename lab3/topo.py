@@ -106,7 +106,7 @@ class Fattree:
                     Node(
                         # 10.k.j.i
                         id=f"10.{self.k}.{j}.{i}",
-                        type="core_switch",
+                        type="core-sw",
                     )
                 )
             core_switch.append(cs_row)
@@ -116,14 +116,19 @@ class Fattree:
         upper_layer = []
         lower_layer = []
         for s in range(self.k):
-            switch = Node(
-                # 10.pod.switch.1
-                id=f"10.{pod_id}.{s}.1",
-                type="pod_switch",
-            )
             if s < self.k // 2:
+                switch = Node(
+                    # 10.pod.switch.1
+                    id=f"10.{pod_id}.{s}.1",
+                    type="edge-sw",
+                )
                 lower_layer.append(switch)
             else:
+                switch = Node(
+                    # 10.pod.switch.1
+                    id=f"10.{pod_id}.{s}.1",
+                    type="aggr-sw",
+                )
                 upper_layer.append(switch)
 
         # link upper and lower layer
