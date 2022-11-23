@@ -5,27 +5,27 @@ class info:
         self.node = node
         self.visited = False
         self.path_length = float('inf')
-        self.parent = []
     
     def __lt__(self, other_info):
         return self.path_length < other_info.path_length
 
 class Dijkstra:
 
-    def __init__(self, hosts, switches):
-        self.num_switches = len(switches)
-        self.nodes = switches + hosts
-        self.path_length = {}
-        for start_node in self.nodes:
+    def __init__(self, hosts, servers):
+        self.nodes = hosts + servers
+        self.parent_table = {}
+        for start_node in hosts:
+            self.parent_table[start_node] = {}
             self.__dijkstra(start_node)
 
     # list of edge
-    def get_path(self, n1, n2):
-        pass
-
-    def get_path_length(self, n1, n2):
-        return self.path_length[(n1, n2)]
-
+    def get_path(self, start_node, end_node):
+        path = [end_node]
+        parent = self.parent_table[start_node].get(end_node)
+        while parent:
+            path.insert(0, parent)
+            parent = self.parent_table[start_node].get(parent)
+        return path
 
     def __dijkstra(self, start_node):
         nodes_info = {node: info(node) for node in self.nodes}
@@ -40,7 +40,5 @@ class Dijkstra:
                 if connect_node_info.visited == False:
                     if connect_node_info.path_length > curr_node_info.path_length + 1:
                         connect_node_info.path_length = curr_node_info.path_length + 1
+                        self.parent_table[start_node][connect_node_info.node] = curr_node_info.node
                         heappush(heap, connect_node_info)
-        for node in self.nodes:
-            if node is not start_node:
-                self.path_length[(start_node, node)] = nodes_info[node].path_length
