@@ -31,6 +31,7 @@ from ryu.topology.api import get_switch, get_link
 from ryu.app.wsgi import ControllerBase
 
 import topo
+from dijkstra import Dijkstra
 
 class SPRouter(app_manager.RyuApp):
 
@@ -39,7 +40,7 @@ class SPRouter(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(SPRouter, self).__init__(*args, **kwargs)
         self.topo_net = topo.Fattree(4)
-
+        self.mac_to_port = {}
 
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
@@ -48,6 +49,15 @@ class SPRouter(app_manager.RyuApp):
         # Switches and links in the network
         switches = get_switch(self, None)
         links = get_link(self, None)
+        # print(len(links))
+        # would show ip address
+        # print(switches[0].dp.address)
+        # for s1 in switches[0].ports:
+        #     print(s1.dpid, s1.port_no, s1.hw_addr, s1.name)
+        # print(links)
+        # print(switches[0].dp.xid, switches[0].dp.id, switches[0].dp.address)
+        # for switch in switches:
+            # print(switch)
 
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -82,5 +92,34 @@ class SPRouter(app_manager.RyuApp):
         dpid = datapath.id
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        in_port = msg.match['in_port']
+        pkt = packet.Packet(msg.data)
 
-        # TODO: handle new packets at the controller
+        # self.mac_to_port.setdefault(datapath.id, {})
+
+        # add switch to host flow
+        arp_pkt = pkt.get_protocol(arp.arp)
+        if arp_pkt:
+            switch_port= in_port
+            host_ip = arp_pkt.src_ip
+            # by arp pkt, we can know which port connect to which host
+            # 0x0800 means ipv4, 0x0806 means arp package
+            match = parser.OFPMatch(eth_type = 0x0800, ipv4_dst = host_ip)
+            actions = [parser.OFPActionOutput(switch_port)]
+            self.add_flow(datapath, 1, match, actions)
+            # print(in_port, arp_pkt.src_ip, arp_pkt.dst_ip)
+
+
+        
+        # print(pkt)
+        # change to ipv4 would get ip
+        # ip = pkt.get_protocols(ipv4.ipv4)
+        # print(ip)
+        # print("=========")
+        # mac_src = eth.src
+        # mac_dst = eth.dst
+        # in_port = msg.match['in_port']
+        # self.mac_to_port[dpid][mac_src] = in_port
+
+        # # init mac_to_port
+        # self.mac_to_port.setdefault(datapath.id, {})
