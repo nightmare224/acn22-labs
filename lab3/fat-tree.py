@@ -49,13 +49,13 @@ class FattreeNet(Topo):
 			ip_to_nodename[switch.id] = nodename
 		for cnt, host in enumerate(self.ft_topo.servers):
 			nodename = self.addHost(f'{host.type}{cnt}', ip=f"{host.id}/8")
-			print(nodename, type(nodename))
+			# print(nodename, type(nodename))
 			ip_to_nodename[host.id] = nodename
 			
 		for cnt, switch in enumerate(self.ft_topo.switches):
-			if switch.type != "edge-sw":
-				continue
-
+			# if switch.type == "edge-sw":
+			# 	continue
+			# print("TYPE:", switch.type)
 			for edge in switch.edges:
 				if edge.lnode.id == switch.id:
 					s1 = edge.lnode
@@ -68,6 +68,7 @@ class FattreeNet(Topo):
 					continue
 				elif (s1.type == "edge-sw") and (s2.type == "aggr-sw"):
 					continue
+				# print("TYPE:", s1.type, s2.type)
 
 				self.addLink(ip_to_nodename[s1.id], ip_to_nodename[s2.id])
 
