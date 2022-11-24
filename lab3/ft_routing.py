@@ -44,13 +44,15 @@ class FTRouter(app_manager.RyuApp):
         self.mac_to_port = mac_to_port.MacToPortTable()
         self.dpid_to_node = {}
         self.ip_to_dpid = {}
+        self.outport_to_ip = {}
 
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
     def get_topology_data(self, ev):
         # Switches and links in the network
         self.switches = get_switch(self, None)
-        self.links = get_link(self, None)
+        # self.links = get_link(self, None)
+        # setup dpid_to_node and ip_to_dpid
         for switch in self.switches:
             switch_info = switch.to_dict()
             dpid = int(switch_info["dpid"], base=16)
@@ -60,6 +62,20 @@ class FTRouter(app_manager.RyuApp):
                 if switch_name.startswith(topo_switch.id):
                     self.dpid_to_node[dpid] = topo_switch
                     self.ip_to_dpid[topo_switch.ip_addr] = dpid
+                    break
+        # print(self.dpid_to_node)
+        # setup outport to ip
+        try:
+            for switch in self.switches:
+                switch_info = switch.to_dict()
+                dpid = int(switch_info["dpid"], base=16)
+                self.outport_to_ip[dpid] = {}
+                links = get_link(self, dpid)
+                for link in links:
+                    self.outport_to_ip[dpid][link.src.port_no] = self.dpid_to_node[link.dst.dpid].ip_addr
+            self.setup_two_level_routing()
+        except:
+            pass
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -73,6 +89,22 @@ class FTRouter(app_manager.RyuApp):
             parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)
         ]
         self.add_flow(datapath, 0, match, actions)
+
+    def setup_two_level_routing(self):
+        # find th e
+        for switch in self.topo_net.aggr_switches:
+            # need to get lower node port and IP
+            dpid = self.ip_to_dpid[switch.ip_addr]
+            datapath = get_switch(self, dpid)[0].dp
+            parser = datapath.ofproto_parser
+            for outport in self._get_lower_ports(dpid):
+                next_hop_ip = self.outport_to_ip[dpid][outport]
+                match = parser.OFPMatch(
+                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(next_hop_ip, "255.255.255.0")
+                )
+                actions = [parser.OFPActionOutput(outport)]
+                self.add_flow(datapath, 1, match, actions)
+
 
     # Add a flow entry to the flow-table
     def add_flow(self, datapath, priority, match, actions):
@@ -93,30 +125,6 @@ class FTRouter(app_manager.RyuApp):
         else:
             return False
 
-        # sender_dpid = None
-        # links = get_link(self, dpid)
-        # for link in links:
-        #     if link.src.port_no == in_port:
-        #         sender_dpid = link.dst.dpid
-        #         break
-        # # get sender and receiver type
-        # receiver_type = self.dpid_to_node[dpid].type
-        # # sender_dpid is host mean sender is host
-        # if sender_dpid is None:
-        #     sender_type = "h"
-        # else:
-        #     sender_type = self.dpid_to_node[sender_dpid].type
-
-        # # sender is core switch means packet is from upper
-        # if sender_type == "as" and receiver_type == "cs":
-        #     return False
-        # elif sender_type == "es" and (receiver_type == "cs" or receiver_type == "as"):
-        #     return False
-        # elif sender_type == "h":
-        #     return False
-        # else:
-        #     return True
-
     def _get_upper_ports(self, dpid):
         ports = []
         links = get_link(self, dpid)
@@ -132,6 +140,7 @@ class FTRouter(app_manager.RyuApp):
                     ports.append(link.src.port_no)
         return ports
 
+
     def _get_lower_ports(self, dpid):
         # lower port might connect to host, so cannot use get_link to get
         # because get_link would not show the connection with host
@@ -143,6 +152,30 @@ class FTRouter(app_manager.RyuApp):
                 ports.append(port.port_no)
 
         return ports
+
+
+    # def _get_upper_node_dpid(self, dpid):
+    #     dpids = []
+    #     links = get_link(self, dpid)
+    #     receiver_type = self.dpid_to_node[dpid].type
+    #     for link in links:
+    #         sender_dpid = link.dst.dpid
+    #         sender_type = self.dpid_to_node[sender_dpid].type
+    #         if receiver_type == "es" and sender_type == "as":
+    #             dpids.append(sender_dpid)
+    #         elif receiver_type == "as" and sender_type == "cs":
+    #             dpids.append(sender_dpid)
+    #     return dpids
+
+    # def _get_lower_node_dpid(self, dpid):
+    #     dpids = []
+    #     upper_node_dpid = self._get_upper_node_dpid(dpid)
+    #     links = get_link(self, dpid)
+    #     for link in links:
+    #         sender_dpid = link.dst.dpid
+    #         if sender_dpid not in upper_node_dpid:
+    #             dpids.append(sender_dpid)
+    #     return dpids
 
     def _get_flood_ports(self, dpid, in_port):
         switch_type = self.dpid_to_node[dpid].type
@@ -172,6 +205,8 @@ class FTRouter(app_manager.RyuApp):
 
     def _is_es(self, dpid):
         return self.dpid_to_node[dpid].type == "es"
+    def _is_as(self, dpid):
+        return self.dpid_to_node[dpid].type == "as"
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
@@ -231,8 +266,13 @@ class FTRouter(app_manager.RyuApp):
         if ip_pkt:
             print("Get Ipv4 package!!!")
             print(ip_pkt)
-            src_ip = ip_pkt.src_ip
-            dst_ip = ip_pkt.dst_ip
+            src_ip = ip_pkt.src
+            dst_ip = ip_pkt.dst
+            ip_split = dst_ip.split('.')
+            # if self.is_as(dpid):
+
+            # if self._is_es(dpid):
+
         #     topo_switch = self.dpid_to_node[dpid]
         #     if topo_switch in self.topo_net.aggr_switches:
         #         switch_ip = topo_switch.ip_addr
