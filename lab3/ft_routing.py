@@ -92,6 +92,19 @@ class FTRouter(app_manager.RyuApp):
         self.add_flow(datapath, 0, match, actions)
 
     def setup_two_level_routing(self):
+        # setup edge switch rule (lower port rule already setup during arp)
+        for switch in self.topo_net.edge_switches:
+            dpid = self.ip_to_dpid[switch.ip_addr]
+            datapath = get_switch(self, dpid)[0].dp
+            parser = datapath.ofproto_parser
+            for cnt, outport in enumerate(self._get_upper_ports(dpid)):
+                # it dosen't matter which outport it match
+                host_id = 2 + cnt
+                match = parser.OFPMatch(
+                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(f"0.0.0.{host_id}", "0.0.0.255")
+                )
+                actions = [parser.OFPActionOutput(outport)]
+                self.add_flow(datapath, 1, match, actions)     
         # setup aggregate switch rule
         for switch in self.topo_net.aggr_switches:
             # need to get lower node port and IP
@@ -104,7 +117,7 @@ class FTRouter(app_manager.RyuApp):
                     eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(next_hop_ip, "255.255.255.0")
                 )
                 actions = [parser.OFPActionOutput(outport)]
-                self.add_flow(datapath, 1, match, actions)
+                self.add_flow(datapath, 2, match, actions)
             for cnt, outport in enumerate(self._get_upper_ports(dpid)):
                 # it dosen't matter which outport it match
                 host_id = 2 + cnt
@@ -175,28 +188,7 @@ class FTRouter(app_manager.RyuApp):
         return ports
 
 
-    # def _get_upper_node_dpid(self, dpid):
-    #     dpids = []
-    #     links = get_link(self, dpid)
-    #     receiver_type = self.dpid_to_node[dpid].type
-    #     for link in links:
-    #         sender_dpid = link.dst.dpid
-    #         sender_type = self.dpid_to_node[sender_dpid].type
-    #         if receiver_type == "es" and sender_type == "as":
-    #             dpids.append(sender_dpid)
-    #         elif receiver_type == "as" and sender_type == "cs":
-    #             dpids.append(sender_dpid)
-    #     return dpids
 
-    # def _get_lower_node_dpid(self, dpid):
-    #     dpids = []
-    #     upper_node_dpid = self._get_upper_node_dpid(dpid)
-    #     links = get_link(self, dpid)
-    #     for link in links:
-    #         sender_dpid = link.dst.dpid
-    #         if sender_dpid not in upper_node_dpid:
-    #             dpids.append(sender_dpid)
-    #     return dpids
 
     def _get_flood_ports(self, dpid, in_port):
         switch_type = self.dpid_to_node[dpid].type
@@ -250,7 +242,7 @@ class FTRouter(app_manager.RyuApp):
                     eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=arp_pkt.src_ip
                 )
                 actions = [parser.OFPActionOutput(in_port)]
-                self.add_flow(datapath, 1, match, actions)
+                self.add_flow(datapath, 2, match, actions)
 
             # add mac address to port to table
             actions = []
