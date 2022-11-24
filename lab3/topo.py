@@ -65,6 +65,7 @@ class Fattree:
         self.k = num_ports
         self.servers = []
         self.switches = []
+        self.edge_switches = []
         self.generate(num_ports)
 
     def generate(self, num_ports):
@@ -96,6 +97,8 @@ class Fattree:
             # add host to servers
             for host_group in host:
                 self.servers.extend(host_group)
+            # add edge_switch to edge_switches
+            self.edge_switches.extend(lower_layer)
 
     def _generate_core_switch(self):
         # (k/2)*(k/2) core nodes matrix
