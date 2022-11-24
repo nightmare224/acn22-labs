@@ -76,6 +76,7 @@ class FTRouter(app_manager.RyuApp):
             self.setup_two_level_routing()
         except:
             pass
+        
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -91,7 +92,7 @@ class FTRouter(app_manager.RyuApp):
         self.add_flow(datapath, 0, match, actions)
 
     def setup_two_level_routing(self):
-        # find th e
+        # setup aggregate switch rule
         for switch in self.topo_net.aggr_switches:
             # need to get lower node port and IP
             dpid = self.ip_to_dpid[switch.ip_addr]
@@ -104,9 +105,15 @@ class FTRouter(app_manager.RyuApp):
                 )
                 actions = [parser.OFPActionOutput(outport)]
                 self.add_flow(datapath, 1, match, actions)
-            for outport in self._get_upper_ports(dpid):
-                # send to core router rule not set
-                pass
+            for cnt, outport in enumerate(self._get_upper_ports(dpid)):
+                # it dosen't matter which outport it match
+                host_id = 2 + cnt
+                match = parser.OFPMatch(
+                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(f"0.0.0.{host_id}", "0.0.0.255")
+                )
+                actions = [parser.OFPActionOutput(outport)]
+                self.add_flow(datapath, 1, match, actions)
+        # setup core switch rule
         for switch in self.topo_net.core_switches:
             dpid = self.ip_to_dpid[switch.ip_addr]
             datapath = get_switch(self, dpid)[0].dp
