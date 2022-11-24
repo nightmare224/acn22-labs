@@ -72,11 +72,12 @@ class FTRouter(app_manager.RyuApp):
                 self.outport_to_ip[dpid] = {}
                 links = get_link(self, dpid)
                 for link in links:
-                    self.outport_to_ip[dpid][link.src.port_no] = self.dpid_to_node[link.dst.dpid].ip_addr
+                    self.outport_to_ip[dpid][link.src.port_no] = self.dpid_to_node[
+                        link.dst.dpid
+                    ].ip_addr
             self.setup_two_level_routing()
         except:
             pass
-        
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -101,10 +102,11 @@ class FTRouter(app_manager.RyuApp):
                 # it dosen't matter which outport it match
                 host_id = 2 + cnt
                 match = parser.OFPMatch(
-                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(f"0.0.0.{host_id}", "0.0.0.255")
+                    eth_type=ether_types.ETH_TYPE_IP,
+                    ipv4_dst=(f"0.0.0.{host_id}", "0.0.0.255"),
                 )
                 actions = [parser.OFPActionOutput(outport)]
-                self.add_flow(datapath, 1, match, actions)     
+                self.add_flow(datapath, 1, match, actions)
         # setup aggregate switch rule
         for switch in self.topo_net.aggr_switches:
             # need to get lower node port and IP
@@ -114,7 +116,8 @@ class FTRouter(app_manager.RyuApp):
             for outport in self._get_lower_ports(dpid):
                 next_hop_ip = self.outport_to_ip[dpid][outport]
                 match = parser.OFPMatch(
-                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(next_hop_ip, "255.255.255.0")
+                    eth_type=ether_types.ETH_TYPE_IP,
+                    ipv4_dst=(next_hop_ip, "255.255.255.0"),
                 )
                 actions = [parser.OFPActionOutput(outport)]
                 self.add_flow(datapath, 2, match, actions)
@@ -122,7 +125,8 @@ class FTRouter(app_manager.RyuApp):
                 # it dosen't matter which outport it match
                 host_id = 2 + cnt
                 match = parser.OFPMatch(
-                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(f"0.0.0.{host_id}", "0.0.0.255")
+                    eth_type=ether_types.ETH_TYPE_IP,
+                    ipv4_dst=(f"0.0.0.{host_id}", "0.0.0.255"),
                 )
                 actions = [parser.OFPActionOutput(outport)]
                 self.add_flow(datapath, 1, match, actions)
@@ -134,11 +138,11 @@ class FTRouter(app_manager.RyuApp):
             for outport in self._get_lower_ports(dpid):
                 next_hop_ip = self.outport_to_ip[dpid][outport]
                 match = parser.OFPMatch(
-                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(next_hop_ip, "255.255.0.0")
+                    eth_type=ether_types.ETH_TYPE_IP,
+                    ipv4_dst=(next_hop_ip, "255.255.0.0"),
                 )
                 actions = [parser.OFPActionOutput(outport)]
                 self.add_flow(datapath, 1, match, actions)
-
 
     # Add a flow entry to the flow-table
     def add_flow(self, datapath, priority, match, actions):
@@ -174,7 +178,6 @@ class FTRouter(app_manager.RyuApp):
                     ports.append(link.src.port_no)
         return ports
 
-
     def _get_lower_ports(self, dpid):
         # lower port might connect to host, so cannot use get_link to get
         # because get_link would not show the connection with host
@@ -187,12 +190,8 @@ class FTRouter(app_manager.RyuApp):
 
         return ports
 
-
-
-
     def _get_flood_ports(self, dpid, in_port):
         switch_type = self.dpid_to_node[dpid].type
-        print("switch name:", self.dpid_to_node[dpid].id)
         ports = []
         if switch_type == "cs":
             ports.extend(self._get_lower_ports(dpid))
@@ -206,20 +205,11 @@ class FTRouter(app_manager.RyuApp):
                 ports.remove(in_port)
                 # choose first upper link to flood (maybe random would be better)
                 ports.append(self._get_upper_ports(dpid)[0])
-        # else:
-        #     if self._is_from_upper_port(dpid, in_port):
-        #         ports = self._get_lower_ports(dpid)
-        #         print("flood to upper: ", ports)
-        #     else:
-        #         ports = self._get_upper_ports(dpid)
-        #         print("flood to upper: ", ports)
 
         return ports
 
     def _is_es(self, dpid):
         return self.dpid_to_node[dpid].type == "es"
-    def _is_as(self, dpid):
-        return self.dpid_to_node[dpid].type == "as"
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
@@ -233,7 +223,6 @@ class FTRouter(app_manager.RyuApp):
 
         arp_pkt = pkt.get_protocol(arp.arp)
         if arp_pkt:
-            print("\n===============", dpid, "===============")
             # add ip rule if it is edge switch and from lower
             if self._is_es(dpid) and not self._is_from_upper_port(dpid, in_port):
                 # # by arp pkt, we can know which port connect to which host
@@ -249,19 +238,15 @@ class FTRouter(app_manager.RyuApp):
             eth = pkt.get_protocol(ethernet.ethernet)
             mac_src = eth.src
             mac_dst = eth.dst
-            print(mac_src, mac_dst)
             self.mac_to_port.dpid_add(dpid)
-            print(dpid, in_port, mac_src)
             self.mac_to_port.port_add(dpid, in_port, haddr_to_bin(mac_src))
 
             # if found the out_port
             out_port = self.mac_to_port.port_get(dpid, haddr_to_bin(mac_dst))
             if out_port:
                 actions.append(parser.OFPActionOutput(out_port))
-                print("find outport:", out_port)
             else:
                 flood_ports = self._get_flood_ports(dpid, in_port)
-                print("flooding:", flood_ports)
                 # flood out the arp request
                 for out_port in flood_ports:
                     actions.append(parser.OFPActionOutput(out_port))
@@ -274,30 +259,3 @@ class FTRouter(app_manager.RyuApp):
                 data=msg.data,
             )
             datapath.send_msg(out)
-
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
-        if ip_pkt:
-            print("Get Ipv4 package!!!")
-            print(ip_pkt)
-            src_ip = ip_pkt.src
-            dst_ip = ip_pkt.dst
-            ip_split = dst_ip.split('.')
-            # if self.is_as(dpid):
-
-            # if self._is_es(dpid):
-
-        #     topo_switch = self.dpid_to_node[dpid]
-        #     if topo_switch in self.topo_net.aggr_switches:
-        #         switch_ip = topo_switch.ip_addr
-        #         self._get_next_hop_ip(switch_ip)
-        #         ip_split = switch_ip.split('.')
-        #         links = get_link(self, dpid)
-        #         print(links)
-        #     elif topo_switch in self.topo_net.edge_switches:
-        #         links = get_link(self, dpid)
-        #         print(links)
-        # match = parser.OFPMatch(
-        #     eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(switch_ip, "255.255.255.0")
-        # )
-
-        # setup
