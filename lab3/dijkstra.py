@@ -11,10 +11,10 @@ class info:
 
 class Dijkstra:
 
-    def __init__(self, hosts, servers):
-        self.nodes = hosts + servers
+    def __init__(self, nodes):
+        self.nodes = nodes
         self.parent_table = {}
-        for start_node in hosts:
+        for start_node in nodes:
             self.parent_table[start_node] = {}
             self.__dijkstra(start_node)
 
@@ -35,7 +35,14 @@ class Dijkstra:
         while heap:
             curr_node_info = heappop(heap)
             curr_node_info.visited = True
-            connect_nodes_info = {nodes_info[edge.lnode] if edge.rnode is curr_node_info.node else nodes_info[edge.rnode] for edge in curr_node_info.node.edges}
+            connect_nodes_info = set()
+            for edge in curr_node_info.node.edges:
+                if edge.lnode is not curr_node_info.node:
+                    if edge.lnode in self.nodes:
+                        connect_nodes_info.add(nodes_info[edge.lnode])
+                else:
+                    if edge.rnode in self.nodes:
+                        connect_nodes_info.add(nodes_info[edge.rnode])
             for connect_node_info in connect_nodes_info:
                 if connect_node_info.visited == False:
                     if connect_node_info.path_length > curr_node_info.path_length + 1:
