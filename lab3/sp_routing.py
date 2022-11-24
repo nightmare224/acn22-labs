@@ -40,7 +40,8 @@ class SPRouter(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(SPRouter, self).__init__(*args, **kwargs)
         self.topo_net = topo.Fattree(4)
-        self.mac_to_port = {}
+        self.mac_to_port = mac_to_port.MacToPortTable()
+        self.dpid_to_node = {}
 
     # Topology discovery
     @set_ev_cls(event.EventSwitchEnter)
@@ -49,15 +50,15 @@ class SPRouter(app_manager.RyuApp):
         # Switches and links in the network
         switches = get_switch(self, None)
         links = get_link(self, None)
-        # print(len(links))
-        # would show ip address
-        # print(switches[0].dp.address)
-        # for s1 in switches[0].ports:
-        #     print(s1.dpid, s1.port_no, s1.hw_addr, s1.name)
-        # print(links)
-        # print(switches[0].dp.xid, switches[0].dp.id, switches[0].dp.address)
-        # for switch in switches:
-            # print(switch)
+        for switch in switches:
+            switch_info = switch.to_dict()
+            dpid = int(switch_info['dpid'], base=16)
+            # just choose the first one
+            switch_name = switch_info['ports'][0]['name']
+            for topo_switch in self.topo_net.switches:
+                if switch_name.startswith(topo_switch.id):
+                    self.dpid_to_node[dpid] = topo_switch
+        print(self.dpid_to_node)
 
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -94,7 +95,8 @@ class SPRouter(app_manager.RyuApp):
         parser = datapath.ofproto_parser
         in_port = msg.match['in_port']
         pkt = packet.Packet(msg.data)
-
+        # print(datapath.ports)
+        # print(ofproto.OFPP_CONTROLLER)
         # self.mac_to_port.setdefault(datapath.id, {})
 
         # add switch to host flow
@@ -109,6 +111,8 @@ class SPRouter(app_manager.RyuApp):
             self.add_flow(datapath, 1, match, actions)
             # print(in_port, arp_pkt.src_ip, arp_pkt.dst_ip)
 
+
+        
 
         
         # print(pkt)
