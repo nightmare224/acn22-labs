@@ -42,20 +42,12 @@ class FattreeNet(Topo):
 		
 
 	def build(self):
-		# init all switch
-		# ip_to_nodename = {}
-		for cnt, switch in enumerate(self.ft_topo.switches):
-			nodename = self.addSwitch(switch.id)
-			# ip_to_nodename[switch.id] = nodename
-		for cnt, host in enumerate(self.ft_topo.servers):
-			nodename = self.addHost(host.id, ip=f"{host.ip_addr}/8")
-			# print(nodename, type(nodename))
-			# ip_to_nodename[host.id] = nodename
+		for switch in self.ft_topo.switches:
+			self.addSwitch(switch.id)
+		for host in self.ft_topo.servers:
+			self.addHost(host.id, ip=f"{host.ip_addr}/8")
 			
-		for cnt, switch in enumerate(self.ft_topo.switches):
-			# if switch.type == "edge-sw":
-			# 	continue
-			# print("TYPE:", switch.type)
+		for switch in self.ft_topo.switches:
 			for edge in switch.edges:
 				if edge.lnode.id == switch.id:
 					s1 = edge.lnode
@@ -68,9 +60,8 @@ class FattreeNet(Topo):
 					continue
 				elif (s1.type == "es") and (s2.type == "as"):
 					continue
-				# print("TYPE:", s1.type, s2.type)
 
-				self.addLink(s1.id, s2.id)
+				self.addLink(s1.id, s2.id, bw=15, delay='5ms')
 
 def make_mininet_instance(graph_topo):
 
