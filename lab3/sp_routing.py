@@ -15,52 +15,48 @@
 
 #!/usr/bin/env python3
 
-from ryu.base import app_manager
-from ryu.controller import mac_to_port
-from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
-from ryu.controller.handler import set_ev_cls
-from ryu.ofproto import ofproto_v1_3
+from ryu.base.app_manager import RyuApp
+from ryu.controller.mac_to_port import MacToPortTable
+from ryu.controller.ofp_event import EventOFPSwitchFeatures, EventOFPPacketIn
+from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
+from ryu.ofproto.ofproto_v1_3 import OFP_VERSION
 from ryu.lib.mac import haddr_to_bin
-from ryu.lib.packet import packet
-from ryu.lib.packet import ipv4
-from ryu.lib.packet import arp
-from ryu.lib.packet import ether_types
+from ryu.lib.packet.packet import Packet
+from ryu.lib.packet.arp import arp
+from ryu.lib.packet.ether_types import ETH_TYPE_IP
 
-from ryu.topology import event, switches
+from ryu.topology.event import EventSwitchEnter
 from ryu.topology.api import get_switch, get_link
-from ryu.app.wsgi import ControllerBase
 
-import topo
+from topo import Fattree
 from dijkstra import Dijkstra
 
-class SPRouter(app_manager.RyuApp):
+class SPRouter(RyuApp):
 
-    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
+    OFP_VERSIONS = [OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
         super(SPRouter, self).__init__(*args, **kwargs)
-        self.topo_net = topo.Fattree(4)
-        self.mac_to_port = mac_to_port.MacToPortTable()
+        self.topo_net = Fattree(4)
+        self.mac_to_port = MacToPortTable()
         self.dpid_to_node = {}
         self.dijkstra_fattree = Dijkstra(self.topo_net.switches)
 
     # Topology discovery
-    @set_ev_cls(event.EventSwitchEnter)
+    @set_ev_cls(EventSwitchEnter)
     def get_topology_data(self, ev):
         # Switches and links in the network
         switches = get_switch(self, None)
         links = get_link(self, None)
         for switch in switches:
-            switch_info = switch.to_dict()
-            dpid = int(switch_info['dpid'], base=16)
+            dpid = switch.dp.id
             # just choose the first one
-            switch_name = switch_info['ports'][0]['name']
+            switch_name = switch.ports[0].name.decode("utf-8")
             for topo_switch in self.topo_net.switches:
                 if switch_name.startswith(topo_switch.id):
                     self.dpid_to_node[dpid] = topo_switch
 
-    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
+    @set_ev_cls(EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
@@ -85,113 +81,90 @@ class SPRouter(app_manager.RyuApp):
         return in_port in self._get_upper_ports(dpid)
     
     def _get_upper_ports(self, dpid):
-        ports = set()
         links = get_link(self, dpid)
         receiver_type = self.dpid_to_node[dpid].type
         if receiver_type == "es":
-            for link in links:
-                sender_dpid = link.dst.dpid
-                sender_type = self.dpid_to_node[sender_dpid].type
-                if sender_type != "h":
-                    ports.add(link.src.port_no)
+            return {link.src.port_no for link in links if self.dpid_to_node[link.dst.dpid].type != "h"}
         elif receiver_type == "as":
-            for link in links:
-                sender_dpid = link.dst.dpid
-                sender_type = self.dpid_to_node[sender_dpid].type
-                if sender_type == "cs":
-                    ports.add(link.src.port_no)
-        return ports
+            return {link.src.port_no for link in links if self.dpid_to_node[link.dst.dpid].type == "cs"}
+        else:
+            return set()
 
     def _get_lower_ports(self, dpid):
         # lower port might connect to host, so cannot use get_link to get
         # because get_link would not show the connection with host
-        ports = set()
         switch = get_switch(self, dpid)[0]
         upper_port = self._get_upper_ports(dpid)
-        for port in switch.ports:
-            if port.port_no not in upper_port:
-                ports.add(port.port_no)
-        return ports
+        return {port.port_no for port in switch.ports if port.port_no not in upper_port}
 
     def _get_all_ports(self, dpid):
         switch = get_switch(self, dpid)[0]
-        ports = {port.port_no for port in switch.ports}
-        return ports
+        return {port.port_no for port in switch.ports}
 
-    def _get_flood_ports(self, dpid, in_port):
-        switch_type = self.dpid_to_node[dpid].type
-        print("switch name:", self.dpid_to_node[dpid].id)
-        ports = set()
-        if switch_type == "cs":
-            ports = self._get_lower_ports(dpid)
-            ports.remove(in_port)
-        elif self._is_from_upper_port(dpid, in_port):
-            ports = self._get_lower_ports(dpid)
-        else:
-            ports = self._get_all_ports(dpid)
-            ports.remove(in_port)
-            if not self._is_es(dpid):
-                next_ports = self._get_next_ports(dpid)
-                ports.intersection_update(next_ports)
-        return ports
-    
-    def _is_es(self, dpid):
-        return self.dpid_to_node[dpid].type == "es"
-    
     def _get_paths(self, dpid):
         start_node = self.dpid_to_node[dpid]
-        paths = []
-        for node in self.topo_net.edge_switches:
-            if node is not start_node:
-                paths.append(self.dijkstra_fattree.get_path(start_node, node))
-        return paths
+        return [self.dijkstra_fattree.get_path(start_node, node) 
+                for node in self.topo_net.edge_switches
+                if node is not start_node]
 
     def _get_next_nodes(self, dpid):
         start_node = self.dpid_to_node[dpid]
         paths = self._get_paths(dpid)
-        next_nodes = set()
-        for path in paths:
-            next_nodes.add(path[path.index(start_node) + 1])
-        return next_nodes
+        return {path[path.index(start_node) + 1] for path in paths}
 
     def _get_next_ports(self, dpid):
         dpids = tuple(self.dpid_to_node.keys())
         nodes = tuple(self.dpid_to_node.values())
         next_nodes = self._get_next_nodes(dpid)
-        next_dpids = set()
-        for next_node in next_nodes:
-            next_dpids.add(dpids[nodes.index(next_node)])
-        next_ports = set()
+        next_dpids = {dpids[nodes.index(next_node)] for next_node in next_nodes}
         links = get_link(self, dpid)
-        for link in links:
-            if link.dst.dpid in next_dpids:
-                next_ports.add(link.src.port_no)
+        next_ports = {link.src.port_no for link in links if link.dst.dpid in next_dpids}
         return next_ports
+
+    def _get_flood_ports(self, dpid, in_port):
+        if self.dpid_to_node[dpid].type == "cs":
+            ports = self._get_lower_ports(dpid)
+            ports.remove(in_port)
+            return ports
+        elif self._is_from_upper_port(dpid, in_port):
+            return self._get_lower_ports(dpid)
+        elif self._is_es(dpid):
+            # filter upper ports
+            ports = self._get_upper_ports(dpid)
+            ports.intersection_update(self._get_next_ports(dpid))
+            lower_ports = self._get_lower_ports(dpid)
+            lower_ports.remove(in_port)
+            ports.update(lower_ports)
+            return ports
+        else:
+            ports = self._get_all_ports(dpid)
+            ports.remove(in_port)
+            ports.intersection_update(self._get_next_ports(dpid))
+            return ports
     
-    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+    def _is_es(self, dpid):
+        return self.dpid_to_node[dpid].type == "es"
+    
+    @set_ev_cls(EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         msg = ev.msg
         datapath = msg.datapath
         dpid = datapath.id
-        ofproto = datapath.ofproto
+        buffer_id = datapath.ofproto.OFP_NO_BUFFER
         parser = datapath.ofproto_parser
         in_port = msg.match['in_port']
-        pkt = packet.Packet(msg.data)
-
-        arp_pkt = pkt.get_protocol(arp.arp)
-        ip_pkt = pkt.get_protocol(ipv4.ipv4)
+        arp_pkt = Packet(msg.data).get_protocol(arp)
         if arp_pkt:
             # by arp pkt, we can know which port connect to which host
-            # 0x0800 means ipv4, 0x0806 means arp package
             if self._is_es(dpid) and not self._is_from_upper_port(dpid, in_port):
-                match = parser.OFPMatch(eth_type = ether_types.ETH_TYPE_IP, ipv4_dst = arp_pkt.src_ip)
+                match = parser.OFPMatch(eth_type = ETH_TYPE_IP, ipv4_dst = arp_pkt.src_ip)
                 actions = [parser.OFPActionOutput(in_port)]
                 self.add_flow(datapath, 1, match, actions)
-
             actions = []
             self.mac_to_port.dpid_add(dpid)
             if not self.mac_to_port.port_get(dpid, haddr_to_bin(arp_pkt.src_mac)):
-                match = parser.OFPMatch(eth_type = ether_types.ETH_TYPE_IP, ipv4_dst = arp_pkt.src_ip)
+                # the shortest path
+                match = parser.OFPMatch(eth_type = ETH_TYPE_IP, ipv4_dst = arp_pkt.src_ip)
                 actions = [parser.OFPActionOutput(in_port)]
                 self.add_flow(datapath, 1, match, actions)
                 self.mac_to_port.port_add(dpid, in_port, haddr_to_bin(arp_pkt.src_mac))
@@ -206,7 +179,7 @@ class SPRouter(app_manager.RyuApp):
                 datapath=datapath,
                 in_port=in_port,
                 actions=actions,
-                buffer_id=datapath.ofproto.OFP_NO_BUFFER,
+                buffer_id=buffer_id,
                 data=msg.data
             )
             datapath.send_msg(out)
