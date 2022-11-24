@@ -32,11 +32,11 @@ class Edge:
 
 # Class for a node in the graph
 class Node:
-    def __init__(self, id, type, ip_addr = None):
+    def __init__(self, id, type, ip_addr):
         self.edges = []
         self.id = id
         self.type = type
-        self.ip_addr = None
+        self.ip_addr = ip_addr
 
     # Add an edge connected to another node
     def add_edge(self, node):
@@ -106,8 +106,8 @@ class Fattree:
                 cs_row.append(
                     Node(
                         # 10.k.j.i
-                        id=f"coresw{j}{i}",
-                        type="core-sw",
+                        id=f"cs{self.k}{j}{i}",
+                        type="cs",
                         ip_addr=f"10.{self.k}.{j}.{i}"
                     )
                 )
@@ -121,16 +121,16 @@ class Fattree:
             if s < self.k // 2:
                 switch = Node(
                     # 10.pod.switch.1
-                    id=f"edgesw{pod_id}{s}",
-                    type="edge-sw",
+                    id=f"es{pod_id}{s}",
+                    type="es",
                     ip_addr=f"10.{pod_id}.{s}.1"
                 )
                 lower_layer.append(switch)
             else:
                 switch = Node(
                     # 10.pod.switch.1
-                    id=f"aggrsw{pod_id}{s}",
-                    type="aggr-sw",
+                    id=f"as{pod_id}{s}",
+                    type="as",
                     ip_addr=f"10.{pod_id}.{s}.1"
                 )
                 upper_layer.append(switch)
@@ -150,8 +150,8 @@ class Fattree:
                 host_group.append(
                     Node(
                         # 10.pod.switch.ID
-                        id=f"host{pod_id}{s}{id}",
-                        type="host",
+                        id=f"h{pod_id}{s}{id}",
+                        type="h",
                         ip_addr=f"10.{pod_id}.{s}.{id}"
                     )
                 )

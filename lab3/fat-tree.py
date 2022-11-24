@@ -64,9 +64,9 @@ class FattreeNet(Topo):
 					s1 = edge.rnode
 					s2 = edge.lnode
 				# only add lower link
-				if (s1.type == "aggr-sw") and (s2.type == "core-sw"):
+				if (s1.type == "as") and (s2.type == "cs"):
 					continue
-				elif (s1.type == "edge-sw") and (s2.type == "aggr-sw"):
+				elif (s1.type == "es") and (s2.type == "as"):
 					continue
 				# print("TYPE:", s1.type, s2.type)
 
