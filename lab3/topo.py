@@ -106,7 +106,7 @@ class Fattree:
                 cs_row.append(
                     Node(
                         # 10.k.j.i
-                        id=f"core-sw{j}{i}",
+                        id=f"coresw{j}{i}",
                         type="core-sw",
                         ip_addr=f"10.{self.k}.{j}.{i}"
                     )
@@ -121,7 +121,7 @@ class Fattree:
             if s < self.k // 2:
                 switch = Node(
                     # 10.pod.switch.1
-                    id=f"edge-sw-{pod_id}{s}",
+                    id=f"edgesw{pod_id}{s}",
                     type="edge-sw",
                     ip_addr=f"10.{pod_id}.{s}.1"
                 )
@@ -129,7 +129,7 @@ class Fattree:
             else:
                 switch = Node(
                     # 10.pod.switch.1
-                    id=f"aggr-sw-{pod_id}{s}",
+                    id=f"aggrsw{pod_id}{s}",
                     type="aggr-sw",
                     ip_addr=f"10.{pod_id}.{s}.1"
                 )
@@ -150,7 +150,7 @@ class Fattree:
                 host_group.append(
                     Node(
                         # 10.pod.switch.ID
-                        id=f"host{id}",
+                        id=f"host{pod_id}{s}{id}",
                         type="host",
                         ip_addr=f"10.{pod_id}.{s}.{id}"
                     )
