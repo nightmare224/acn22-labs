@@ -71,11 +71,11 @@ class Fattree:
         self.generate(num_ports)
 
     def generate(self, num_ports):
-        # create core switch
-        self.core_switches.extend(self._generate_core_switch())
         # add core_switch to switches
-        for cs_row in self.core_switches:
+        core_switches = self._generate_core_switch()
+        for cs_row in core_switches:
             self.switches.extend(cs_row)
+            self.core_switches.extend(cs_row)
 
         # create pod and link host and core switch
         for pod_id in range(self.k):
@@ -85,7 +85,7 @@ class Fattree:
             host = self._generate_host(pod_id)
 
             # link upper pod switch and core switch
-            for cs_row_id, cs_row in enumerate(self.core_switches):
+            for cs_row_id, cs_row in enumerate(core_switches):
                 for cs in cs_row:
                     cs.add_edge(upper_layer[cs_row_id])
             # link lower pod switch and host

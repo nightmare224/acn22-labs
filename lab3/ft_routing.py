@@ -104,6 +104,20 @@ class FTRouter(app_manager.RyuApp):
                 )
                 actions = [parser.OFPActionOutput(outport)]
                 self.add_flow(datapath, 1, match, actions)
+            for outport in self._get_upper_ports(dpid):
+                # send to core router rule not set
+                pass
+        for switch in self.topo_net.core_switches:
+            dpid = self.ip_to_dpid[switch.ip_addr]
+            datapath = get_switch(self, dpid)[0].dp
+            parser = datapath.ofproto_parser
+            for outport in self._get_lower_ports(dpid):
+                next_hop_ip = self.outport_to_ip[dpid][outport]
+                match = parser.OFPMatch(
+                    eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=(next_hop_ip, "255.255.0.0")
+                )
+                actions = [parser.OFPActionOutput(outport)]
+                self.add_flow(datapath, 1, match, actions)
 
 
     # Add a flow entry to the flow-table
