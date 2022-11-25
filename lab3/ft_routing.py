@@ -216,7 +216,6 @@ class FTRouter(app_manager.RyuApp):
         msg = ev.msg
         datapath = msg.datapath
         dpid = datapath.id
-        ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         in_port = msg.match["in_port"]
         pkt = packet.Packet(msg.data)
