@@ -11,10 +11,10 @@ class info:
 
 class Dijkstra:
 
-    def __init__(self, nodes):
+    def __init__(self, nodes, target):
         self.nodes = nodes
         self.parent_table = {}
-        for start_node in nodes:
+        for start_node in target:
             self.parent_table[start_node] = {}
             self.__dijkstra(start_node)
 

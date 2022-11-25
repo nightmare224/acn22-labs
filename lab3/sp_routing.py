@@ -16,13 +16,13 @@
 #!/usr/bin/env python3
 
 from ryu.base.app_manager import RyuApp
-from ryu.controller.mac_to_port import MacToPortTable
 from ryu.controller.ofp_event import EventOFPSwitchFeatures, EventOFPPacketIn
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
 from ryu.ofproto.ofproto_v1_3 import OFP_VERSION
 from ryu.lib.mac import haddr_to_bin
 from ryu.lib.packet.packet import Packet
 from ryu.lib.packet.arp import arp
+from ryu.lib.packet.ipv4 import ipv4
 from ryu.lib.packet.ether_types import ETH_TYPE_IP
 
 from ryu.topology.event import EventSwitchEnter
@@ -38,9 +38,10 @@ class SPRouter(RyuApp):
     def __init__(self, *args, **kwargs):
         super(SPRouter, self).__init__(*args, **kwargs)
         self.topo_net = Fattree(4)
-        self.mac_to_port = MacToPortTable()
+        self.ip_to_port = {}
+        self.ip_to_dpid = {}
         self.dpid_to_node = {}
-        self.dijkstra_fattree = Dijkstra(self.topo_net.switches)
+        self.dijkstra_fattree = Dijkstra(self.topo_net.switches, self.topo_net.edge_switches)
 
     # Topology discovery
     @set_ev_cls(EventSwitchEnter)
@@ -101,46 +102,47 @@ class SPRouter(RyuApp):
         switch = get_switch(self, dpid)[0]
         return {port.port_no for port in switch.ports}
 
-    def _get_paths(self, dpid):
-        start_node = self.dpid_to_node[dpid]
-        return [self.dijkstra_fattree.get_path(start_node, node) 
+    def _get_paths(self, src_dpid):
+        start_node = self.dpid_to_node[src_dpid]
+        paths =  [self.dijkstra_fattree.get_path(start_node, node) 
                 for node in self.topo_net.edge_switches
                 if node is not start_node]
+        # for path in paths:
+        #     for node in path:
+        #         print(node.id, end=" ")
+        #     print()
+        return paths
 
-    def _get_next_nodes(self, dpid):
+    def _get_next_nodes(self, dpid, src_ip):
         start_node = self.dpid_to_node[dpid]
-        paths = self._get_paths(dpid)
-        return {path[path.index(start_node) + 1] for path in paths}
+        paths = self._get_paths(self.ip_to_dpid[src_ip])
+        next_nodes = set()
+        for path in paths:
+            if start_node in path:
+                index = path.index(start_node) + 1
+                if index < len(path):
+                    next_nodes.add(path[index])
+        return next_nodes
 
-    def _get_next_ports(self, dpid):
+    def _get_next_ports(self, dpid, src_ip, is_from_upper_port):
         dpids = tuple(self.dpid_to_node.keys())
         nodes = tuple(self.dpid_to_node.values())
-        next_nodes = self._get_next_nodes(dpid)
+        next_nodes = self._get_next_nodes(dpid, src_ip)
         next_dpids = {dpids[nodes.index(next_node)] for next_node in next_nodes}
         links = get_link(self, dpid)
         next_ports = {link.src.port_no for link in links if link.dst.dpid in next_dpids}
+        if is_from_upper_port:
+            next_ports.intersection_update(self._get_lower_ports(dpid))
         return next_ports
 
-    def _get_flood_ports(self, dpid, in_port):
-        if self.dpid_to_node[dpid].type == "cs":
-            ports = self._get_lower_ports(dpid)
-            ports.remove(in_port)
-            return ports
-        elif self._is_from_upper_port(dpid, in_port):
-            return self._get_lower_ports(dpid)
-        elif self._is_es(dpid):
-            # filter upper ports
-            ports = self._get_upper_ports(dpid)
-            ports.intersection_update(self._get_next_ports(dpid))
-            lower_ports = self._get_lower_ports(dpid)
-            lower_ports.remove(in_port)
-            ports.update(lower_ports)
-            return ports
-        else:
-            ports = self._get_all_ports(dpid)
-            ports.remove(in_port)
-            ports.intersection_update(self._get_next_ports(dpid))
-            return ports
+    def _get_flood_ports(self, dpid, in_port, src_ip):
+        is_from_upper_port = self._is_from_upper_port(dpid, in_port)
+        next_ports = self._get_next_ports(dpid, src_ip, is_from_upper_port)
+        if self.dpid_to_node[dpid].type == "es":
+            next_ports.update(self._get_lower_ports(dpid))
+            if not self._is_from_upper_port(dpid, in_port):
+                next_ports.remove(in_port)
+        return next_ports
     
     def _is_es(self, dpid):
         return self.dpid_to_node[dpid].type == "es"
@@ -153,26 +155,24 @@ class SPRouter(RyuApp):
         buffer_id = datapath.ofproto.OFP_NO_BUFFER
         parser = datapath.ofproto_parser
         in_port = msg.match['in_port']
-        arp_pkt = Packet(msg.data).get_protocol(arp)
+        pkt = Packet(msg.data)
+        arp_pkt = pkt.get_protocol(arp)
+        ip_pkt = pkt.get_protocol(ipv4)
         if arp_pkt:
+            # print(f"arp_pkt: {self.dpid_to_node[dpid].id, arp_pkt.src_ip, in_port}")
+            self.ip_to_dpid.setdefault(arp_pkt.src_ip, dpid)
             # by arp pkt, we can know which port connect to which host
-            if self._is_es(dpid) and not self._is_from_upper_port(dpid, in_port):
-                match = parser.OFPMatch(eth_type = ETH_TYPE_IP, ipv4_dst = arp_pkt.src_ip)
-                actions = [parser.OFPActionOutput(in_port)]
-                self.add_flow(datapath, 1, match, actions)
             actions = []
-            self.mac_to_port.dpid_add(dpid)
-            if not self.mac_to_port.port_get(dpid, haddr_to_bin(arp_pkt.src_mac)):
-                # the shortest path
-                match = parser.OFPMatch(eth_type = ETH_TYPE_IP, ipv4_dst = arp_pkt.src_ip)
-                actions = [parser.OFPActionOutput(in_port)]
-                self.add_flow(datapath, 1, match, actions)
-                self.mac_to_port.port_add(dpid, in_port, haddr_to_bin(arp_pkt.src_mac))
-            out_port = self.mac_to_port.port_get(dpid, haddr_to_bin(arp_pkt.dst_mac))
+            self.ip_to_port.setdefault(dpid, {})
+            match = parser.OFPMatch(eth_type=ETH_TYPE_IP, ipv4_dst=arp_pkt.src_ip)
+            actions = [parser.OFPActionOutput(in_port)]
+            self.add_flow(datapath, 1, match, actions)
+            self.ip_to_port[dpid].setdefault(arp_pkt.src_ip, in_port)
+            out_port = self.ip_to_port[dpid].get(arp_pkt.dst_ip)
             if out_port:
                 actions.append(parser.OFPActionOutput(out_port))
             else:
-                flood_ports = self._get_flood_ports(dpid, in_port)
+                flood_ports = self._get_flood_ports(dpid, in_port, arp_pkt.src_ip)
                 for out_port in flood_ports:
                     actions.append(parser.OFPActionOutput(out_port))
             out = parser.OFPPacketOut(
@@ -183,3 +183,11 @@ class SPRouter(RyuApp):
                 data=msg.data
             )
             datapath.send_msg(out)
+        # elif ip_pkt:
+        #     print(f"ip_pkt: {self.dpid_to_node[dpid].id, ip_pkt.src, in_port}")
+        #     self.ip_to_dpid.setdefault(ip_pkt.src, dpid)
+
+        #     match = parser.OFPMatch(eth_type=ETH_TYPE_IP, ipv4_dst=ip_pkt.src)
+        #     actions = [parser.OFPActionOutput(in_port)]
+        #     self.add_flow(datapath, 1, match, actions)
+        #     self.ip_to_port[dpid].setdefault(ip_pkt.src, in_port)
