@@ -19,10 +19,8 @@ from ryu.base.app_manager import RyuApp
 from ryu.controller.ofp_event import EventOFPSwitchFeatures, EventOFPPacketIn
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER, set_ev_cls
 from ryu.ofproto.ofproto_v1_3 import OFP_VERSION
-from ryu.lib.mac import haddr_to_bin
 from ryu.lib.packet.packet import Packet
 from ryu.lib.packet.arp import arp
-from ryu.lib.packet.ipv4 import ipv4
 from ryu.lib.packet.ether_types import ETH_TYPE_IP
 
 from ryu.topology.event import EventSwitchEnter
@@ -48,7 +46,6 @@ class SPRouter(RyuApp):
     def get_topology_data(self, ev):
         # Switches and links in the network
         switches = get_switch(self, None)
-        links = get_link(self, None)
         for switch in switches:
             dpid = switch.dp.id
             # just choose the first one
@@ -77,9 +74,6 @@ class SPRouter(RyuApp):
         mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
                                 match=match, instructions=inst)
         datapath.send_msg(mod)
-
-    def _is_from_upper_port(self, dpid, in_port):
-        return in_port in self._get_upper_ports(dpid)
     
     def _get_upper_ports(self, dpid):
         links = get_link(self, dpid)
@@ -98,20 +92,18 @@ class SPRouter(RyuApp):
         upper_port = self._get_upper_ports(dpid)
         return {port.port_no for port in switch.ports if port.port_no not in upper_port}
 
+    def _is_from_upper_port(self, dpid, in_port):
+        return in_port in self._get_upper_ports(dpid)
+
     def _get_all_ports(self, dpid):
         switch = get_switch(self, dpid)[0]
         return {port.port_no for port in switch.ports}
 
     def _get_paths(self, src_dpid):
         start_node = self.dpid_to_node[src_dpid]
-        paths =  [self.dijkstra_fattree.get_path(start_node, node) 
+        return [self.dijkstra_fattree.get_path(start_node, node) 
                 for node in self.topo_net.edge_switches
                 if node is not start_node]
-        # for path in paths:
-        #     for node in path:
-        #         print(node.id, end=" ")
-        #     print()
-        return paths
 
     def _get_next_nodes(self, dpid, src_ip):
         start_node = self.dpid_to_node[dpid]
@@ -157,9 +149,7 @@ class SPRouter(RyuApp):
         in_port = msg.match['in_port']
         pkt = Packet(msg.data)
         arp_pkt = pkt.get_protocol(arp)
-        ip_pkt = pkt.get_protocol(ipv4)
         if arp_pkt:
-            # print(f"arp_pkt: {self.dpid_to_node[dpid].id, arp_pkt.src_ip, in_port}")
             self.ip_to_dpid.setdefault(arp_pkt.src_ip, dpid)
             # by arp pkt, we can know which port connect to which host
             actions = []
@@ -183,11 +173,3 @@ class SPRouter(RyuApp):
                 data=msg.data
             )
             datapath.send_msg(out)
-        # elif ip_pkt:
-        #     print(f"ip_pkt: {self.dpid_to_node[dpid].id, ip_pkt.src, in_port}")
-        #     self.ip_to_dpid.setdefault(ip_pkt.src, dpid)
-
-        #     match = parser.OFPMatch(eth_type=ETH_TYPE_IP, ipv4_dst=ip_pkt.src)
-        #     actions = [parser.OFPActionOutput(in_port)]
-        #     self.add_flow(datapath, 1, match, actions)
-        #     self.ip_to_port[dpid].setdefault(ip_pkt.src, in_port)
