@@ -8,9 +8,10 @@
       "match": {
         "hdr.ipv4.dstAddr": ["10.0.7.7", 32]
       },
-      "action_name": "MyIngress.ipv4_forward",
+      "action_name": "MyIngress.intercept",
       "action_params": {
-        "dstAddr": "08:00:00:00:07:77",
+        "dstMacAddr": "08:00:00:00:03:33",
+        "dstIpAddr": "10.0.3.3",
         "port": 1
       }
     }

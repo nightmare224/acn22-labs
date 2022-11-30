@@ -84,10 +84,18 @@ control MyIngress(inout headers hdr,
     action ipv4_forward(bit<48> dstAddr, bit<9> port) {
         standard_metadata.egress_spec = port;
         // the source is default gateway
-        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         // change the mac address source to default gateway mac
         // and modify the destination to correct distination address
         hdr.ethernet.dstAddr = dstAddr;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+    }
+    action intercept(bit<48> dstMacAddr, bit<32> dstIpAddr, bit<9> port) {
+        standard_metadata.egress_spec = port;
+        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+        hdr.ethernet.dstAddr = dstMacAddr;
+        // also modify the ip address
+        hdr.ipv4.dstAddr = dstIpAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     action multicast() {
@@ -103,6 +111,7 @@ control MyIngress(inout headers hdr,
         actions = {
             ipv4_forward;
             multicast;
+            intercept;
             drop;
         }
         size = 1024;
