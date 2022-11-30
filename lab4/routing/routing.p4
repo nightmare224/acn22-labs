@@ -83,8 +83,17 @@ control MyIngress(inout headers hdr,
     // action ipv4_forward(bit<48> dstMacAddr, bit<9> port) {
     //     standard_metadata.egress_spec = port;
     // }
-    action ipv4_forward(bit<9> port) {
+    // action ipv4_forward(bit<9> port) {
+    //     standard_metadata.egress_spec = port;
+    // }
+    action ipv4_forward(bit<48> dstAddr, bit<9> port) {
         standard_metadata.egress_spec = port;
+        // the source is default gateway
+        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+        // change the mac address source to default gateway mac
+        // and modify the destination to correct distination address
+        hdr.ethernet.dstAddr = dstAddr;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     action drop() {
         mark_to_drop(standard_metadata);
