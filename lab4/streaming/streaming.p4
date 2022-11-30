@@ -90,6 +90,9 @@ control MyIngress(inout headers hdr,
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
+    action multicast() {
+        standard_metadata.mcast_grp = 1;
+    }
     action drop() {
         mark_to_drop(standard_metadata);
     }
@@ -99,6 +102,7 @@ control MyIngress(inout headers hdr,
         }
         actions = {
             ipv4_forward;
+            multicast;
             drop;
         }
         size = 1024;
