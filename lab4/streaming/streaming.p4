@@ -26,14 +26,12 @@ header ipv4_t {
     bit<16> hdrChecksum; // header checksum
     bit<32> srcAddr;
     bit<32> dstAddr;    //ipv4
-    bit<24> options;
-    bit<8> padding;
 }
 
 header udp_t {
     bit<16> srcPort;
     bit<16> dstPort;
-    bit<16> length;
+    bit<16> totalLength;
     bit<16> checksum;
 }
 
@@ -98,19 +96,8 @@ control MyIngress(inout headers hdr,
     
     action ipv4_forward(bit<48> dstAddr, bit<9> port) {
         standard_metadata.egress_spec = port;
-        // the source is default gateway
-        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
-        // change the mac address source to default gateway mac
-        // and modify the destination to correct distination address
+        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-    }
-    action intercept(bit<48> dstMacAddr, bit<32> dstIpAddr, bit<9> port) {
-        standard_metadata.egress_spec = port;
-        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
-        hdr.ethernet.dstAddr = dstMacAddr;
-        // also modify the ip address
-        hdr.ipv4.dstAddr = dstIpAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     action multicast() {
@@ -126,8 +113,8 @@ control MyIngress(inout headers hdr,
         actions = {
             ipv4_forward;
             multicast;
-            intercept;
             drop;
+            NoAction;
         }
         size = 1024;
         default_action = drop();
@@ -144,26 +131,28 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
-    action udp_checksum_to_zero() {
+    action update_dest(bit<48> dstMacAddr, bit<32> dstIpAddr) {
+        hdr.ethernet.dstAddr = dstMacAddr;
+        hdr.ipv4.dstAddr = dstIpAddr;
         hdr.udp.checksum = 0;
         // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
     }
-    action NoAction () {}
-    table udp_checksum {
+    table multicast_table {
         //the key is useless, just want to always make checksum 0
         key = {
-            hdr.ipv4.dstAddr: lpm;
+            standard_metadata.egress_rid: exact;
+            standard_metadata.egress_port: exact;
         }
         actions = {
-            udp_checksum_to_zero;
+            update_dest;
             NoAction;
         }
         size = 1024;
-        default_action = NoAction();
+        default_action = NoAction;
     }
     apply {
         if(hdr.udp.isValid()){
-            udp_checksum.apply();
+            multicast_table.apply();
         }
     }
 }

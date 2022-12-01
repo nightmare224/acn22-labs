@@ -10,8 +10,19 @@
       },
       "action_name": "MyIngress.ipv4_forward",
       "action_params": {
-        "dstAddr": "08:00:00:00:01:11",
+        "dstAddr": "08:00:00:00:01:00",
         "port": 1
+      }
+    },
+    {
+      "table": "MyIngress.ipv4_lpm",
+      "match": {
+        "hdr.ipv4.dstAddr": ["10.0.3.3", 32]
+      },
+      "action_name": "MyIngress.ipv4_forward",
+      "action_params": {
+        "dstAddr": "08:00:00:00:03:00",
+        "port": 3
       }
     },
     {
@@ -21,6 +32,18 @@
       },
       "action_name": "MyIngress.multicast",
       "action_params": {}
+    },
+    {
+      "table": "MyEgress.multicast_table",
+      "match": {
+        "standard_metadata.egress_rid": 1,
+        "standard_metadata.egress_port": 3
+      },
+      "action_name": "MyEgress.update_dest",
+      "action_params": {
+        "dstMacAddr": "08:00:00:00:03:00",
+        "dstIpAddr": "10.0.3.3"
+      }
     }
   ],
   "multicast_group_entries" : [
