@@ -144,7 +144,27 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
-    apply {  
+    action udp_checksum_to_zero() {
+        hdr.udp.checksum = 0;
+        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+    }
+    action NoAction () {}
+    table udp_checksum {
+        //the key is useless, just want to always make checksum 0
+        key = {
+            hdr.ipv4.dstAddr: lpm;
+        }
+        actions = {
+            udp_checksum_to_zero;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+    apply {
+        if(hdr.udp.isValid()){
+            udp_checksum.apply();
+        }
     }
 }
 
