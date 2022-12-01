@@ -30,13 +30,21 @@ header ipv4_t {
     bit<8> padding;
 }
 
+header udp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<16> length;
+    bit<16> checksum;
+}
+
 struct metadata {
     /* empty */
 }
 
 struct headers {
-    ethernet_t   ethernet;
-    ipv4_t       ipv4;
+    ethernet_t  ethernet;
+    ipv4_t  ipv4;
+    udp_t   udp;        
 }
 
 /*************************************************************************
@@ -59,6 +67,13 @@ parser MyParser(packet_in packet,
     }
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
+        transition select(hdr.ipv4.protocol) {
+            17: parse_udp;
+            default: accept;
+        }
+    }
+    state parse_udp {
+        packet.extract(hdr.udp);
         transition accept;
     }
 }
@@ -92,7 +107,7 @@ control MyIngress(inout headers hdr,
     }
     action intercept(bit<48> dstMacAddr, bit<32> dstIpAddr, bit<9> port) {
         standard_metadata.egress_spec = port;
-        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstMacAddr;
         // also modify the ip address
         hdr.ipv4.dstAddr = dstIpAddr;
@@ -168,6 +183,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.udp);
     }
 }
 
