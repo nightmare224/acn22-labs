@@ -26,8 +26,8 @@ header ipv4_t {
     bit<16> hdrChecksum; // header checksum
     bit<32> srcAddr;
     bit<32> dstAddr;    //ipv4
-    bit<24> options;
-    bit<8> padding;
+    // bit<24> options;
+    // bit<8> padding;
 }
 
 header udp_t {
