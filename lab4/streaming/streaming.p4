@@ -98,23 +98,17 @@ control MyIngress(inout headers hdr,
     
     action ipv4_forward(bit<48> dstAddr, bit<9> port) {
         standard_metadata.egress_spec = port;
-        // the source is default gateway
-        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
-        // change the mac address source to default gateway mac
-        // and modify the destination to correct distination address
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     action intercept(bit<48> dstMacAddr, bit<32> dstIpAddr, bit<9> port) {
         standard_metadata.egress_spec = port;
-        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstMacAddr;
-        // also modify the ip address
         hdr.ipv4.dstAddr = dstIpAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
-    action multicast() {
-        standard_metadata.mcast_grp = 1;
+    action multicast(bit<16> multicast_group_id) {
+        standard_metadata.mcast_grp = multicast_group_id;
     }
     action drop() {
         mark_to_drop(standard_metadata);
@@ -146,11 +140,8 @@ control MyEgress(inout headers hdr,
                  inout standard_metadata_t standard_metadata) {
     action udp_checksum_to_zero() {
         hdr.udp.checksum = 0;
-        // hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
     }
-    action NoAction () {}
     table udp_checksum {
-        //the key is useless, just want to always make checksum 0
         key = {
             hdr.ipv4.dstAddr: lpm;
         }

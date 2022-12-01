@@ -20,7 +20,9 @@
         "hdr.ipv4.dstAddr": ["10.0.7.7", 32]
       },
       "action_name": "MyIngress.multicast",
-      "action_params": {}
+      "action_params": {
+        "multicast_group_id": 1
+      }
     }
   ],
   "multicast_group_entries": [
