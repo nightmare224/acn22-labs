@@ -102,10 +102,8 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     action intercept(bit<48> dstMacAddr, bit<32> dstIpAddr, bit<9> port) {
-        standard_metadata.egress_spec = port;
-        hdr.ethernet.dstAddr = dstMacAddr;
         hdr.ipv4.dstAddr = dstIpAddr;
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+        ipv4_forward(dstMacAddr, port);
     }
     action multicast(bit<16> multicast_group_id) {
         standard_metadata.mcast_grp = multicast_group_id;
