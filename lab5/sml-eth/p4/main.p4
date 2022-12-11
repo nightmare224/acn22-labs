@@ -47,20 +47,24 @@ parser TheParser(packet_in packet,
 control TheIngress(inout headers hdr,
                    inout metadata meta,
                    inout standard_metadata_t standard_metadata) {
-  // action sml_aggr() {
-  //   standard_metadata.mcast_grp = 1;
-  // }
-  // table sml {
-  //   key = {
-  //     hdr.eth.etherType: exact;
-  //   }
-  //   action {
-  //     sml_aggr;
-  //   }
-  // }
+                    
+  action sml_aggr() {
+    standard_metadata.mcast_grp = 1;
+  }
+  table sml_table {
+    key = {
+      hdr.eth.etherType: exact;
+      // hdr.sml.rank: lpm;
+    }
+    actions = {
+      sml_aggr;
+    }
+    size = 1024;
+    default_action = sml_aggr();
+  }
   apply {
     /* TODO: Implement me */
-    
+    sml_table.apply();
   }
 }
 
