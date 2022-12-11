@@ -38,7 +38,16 @@ def RunControlPlane(net):
     """
     # like insert table entry 
     # TODO: Implement me (if needed)
-    print(net.__dir__())
+    # print(net.__dir__())
+    # print(net.switches[0].ports)
+    print(net.switches[0].name)
+    ports = []
+    for key in net.switches[0].ports:
+        if str(key).startswith(net.switches[0].name):
+            ports.append(net.switches[0].ports[key])
+    # ports = [i for i in range(len(net.switches[0].ports.keys()) - 1)]
+    # print(list(net.switches[0].ports.keys())[1])
+    net.switches[0].addMulticastGroup(mgid=1, ports=ports)
 
 topo = SMLTopo() # TODO: Create an SMLTopo instance
 net = P4Mininet(program="p4/main.p4", topo=topo)
