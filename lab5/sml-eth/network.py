@@ -9,8 +9,14 @@ NUM_WORKERS = 2 # TODO: Make sure your program can handle larger values
 class SMLTopo(Topo):
     def __init__(self, **opts):
         Topo.__init__(self, **opts)
+        # add host and add link
         # TODO: Implement me. Feel free to modify the constructor signature
         # NOTE: Make sure worker names are consistent with RunWorkers() below
+    def build(self):
+        switch = self.addSwitch('s1')
+        for i in range(NUM_WORKERS):
+            host = self.addHost(f"w{i}")
+            self.addLink(switch, host)
 
 def RunWorkers(net):
     """
@@ -30,10 +36,11 @@ def RunControlPlane(net):
     """
     One-time control plane configuration
     """
+    # like insert table entry 
     # TODO: Implement me (if needed)
-    pass
+    print(net.__dir__())
 
-topo = None # TODO: Create an SMLTopo instance
+topo = SMLTopo() # TODO: Create an SMLTopo instance
 net = P4Mininet(program="p4/main.p4", topo=topo)
 net.run_control_plane = lambda: RunControlPlane(net)
 net.run_workers = lambda: RunWorkers(net)

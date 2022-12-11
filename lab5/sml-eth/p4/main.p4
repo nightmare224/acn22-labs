@@ -5,11 +5,15 @@ typedef bit<9>  sw_port_t;   /*< Switch port */
 typedef bit<48> mac_addr_t;  /*< MAC address */
 
 header ethernet_t {
-  /* TODO: Define me */
+  bit<48> dstAddr;
+  bit<48> srcAddr;
+  bit<16> etherType;
 }
 
 header sml_t {
   /* TODO: Define me */
+  bit<8> rank;
+  bit<128> vector;
 }
 
 struct headers {
@@ -24,14 +28,39 @@ parser TheParser(packet_in packet,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
   /* TODO: Implement me */
-  state start {}
+  state start {
+    transition parse_ethernet;
+  }
+  state parse_ethernet {
+    packet.extract(hdr.eth);
+    transition select(hdr.eth.etherType) {
+      0x8787: parse_sml;
+      default: accept;
+    }
+  }
+  state parse_sml {
+    packet.extract(hdr.sml);
+    transition accept;
+  }
 }
 
 control TheIngress(inout headers hdr,
                    inout metadata meta,
                    inout standard_metadata_t standard_metadata) {
+  // action sml_aggr() {
+  //   standard_metadata.mcast_grp = 1;
+  // }
+  // table sml {
+  //   key = {
+  //     hdr.eth.etherType: exact;
+  //   }
+  //   action {
+  //     sml_aggr;
+  //   }
+  // }
   apply {
     /* TODO: Implement me */
+    
   }
 }
 
@@ -57,7 +86,8 @@ control TheChecksumComputation(inout headers  hdr, inout metadata meta) {
 
 control TheDeparser(packet_out packet, in headers hdr) {
   apply {
-    /* TODO: Implement me */
+    packet.emit(hdr.eth);
+    packet.emit(hdr.sml);
   }
 }
 
