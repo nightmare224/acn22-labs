@@ -18,14 +18,17 @@ header sml_h {
 }
 
 header elem_h {
-  bit<32> elem00;
-  bit<32> elem01;
+  // elem_t[32] elem;
+  elem_t elem;
+  bit<8> bos;   /* bottom of stack */
+  // bit<32> elem00;
+  // bit<32> elem01;
 }
 
 struct headers {
   ethernet_h eth;
   sml_h sml;
-  elem_h vector;
+  elem_h[32] vector;
 }
 
 struct metadata { 

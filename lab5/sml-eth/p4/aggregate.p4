@@ -8,28 +8,24 @@
 
 control Aggregate(inout headers hdr, 
                   // in bit<32> index, 
-                  in elem_t elem_in, 
+                  // in elem_t elem_in, 
                   inout standard_metadata_t standard_metadata/*, out elem_t elem_out*/){
 
-  register<bit<32>>(2) reg;
+  register<bit<32>>(64) reg;
+  //TODO: may be move the current_elem_in to inout, so it access by next stage
   action aggr(bit<32> elem_idx) {
     bit<32> elem_tmp = 0;
-    if(elem_idx==0){
-      // reg.read(elem_tmp, elem_idx); /* condition not support */
-      /* should change to elem_in */
-      elem_tmp = elem_tmp + hdr.vector.elem00 + 16;
-      // reg.write(elem_tmp, elem_idx); /* condition not support */
-      /* should check if all worker done the write */
-      hdr.vector.elem00 = elem_tmp;
-      // hdr.vector.elem00 = 16;
-    }else if(elem_idx==1){
-      // reg.read(elem_tmp, elem_idx); /* condition not support */
-      elem_tmp = elem_tmp + hdr.vector.elem01 + 32;
-      // reg.write(elem_tmp, elem_idx); /* condition not support */
-      /* should check if all worker done the write */
-      hdr.vector.elem01 = elem_tmp;
-      // hdr.vector.elem01 = 32;
-    }
+
+    /* read the data from register */
+    reg.read(elem_tmp, elem_idx);
+    /* aggregate current value and register value */
+    elem_tmp = elem_tmp + hdr.vector[hdr.sml.curr_elem_idx].elem;
+    /* write new value to register */
+    reg.write(elem_idx, elem_tmp);
+    /* write new value to header (Should only be write if all worker do it, should remove this part ) */
+    hdr.vector[hdr.sml.curr_elem_idx].elem = elem_tmp;
+
+
     /* plus 1 before go to next stage */
     hdr.sml.curr_elem_idx = hdr.sml.curr_elem_idx + 1;
     standard_metadata.mcast_grp = 1;
