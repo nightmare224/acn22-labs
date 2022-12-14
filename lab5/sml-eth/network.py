@@ -57,11 +57,11 @@ def RunControlPlane(net):
     # switch.printTableEntries()
     # print(switch.p4info_helper.p4info.tables[0].match_fields[0])
     # print(switch.p4info_helper.p4info.tables[0].ListFields())
-    switch.insertTableEntry(
-        table_name="TheIngress.sml_table",
-        match_fields={"hdr.eth.etherType": 0x8787},
-        action_name="TheIngress.sml_aggr",
-    )
+    # switch.insertTableEntry(
+    #     table_name="TheIngress.sml_table",
+    #     match_fields={"hdr.eth.etherType": 0x8787},
+    #     action_name="TheIngress.sml_aggr",
+    # )
 
 
 topo = SMLTopo()  # TODO: Create an SMLTopo instance

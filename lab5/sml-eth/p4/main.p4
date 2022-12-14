@@ -1,27 +1,11 @@
 #include <core.p4>
 #include <v1model.p4>
+#include "headers.p4"
+#include "types.p4"
+#include "aggregate.p4"
 
-typedef bit<9>  sw_port_t;   /*< Switch port */
-typedef bit<48> mac_addr_t;  /*< MAC address */
 
-header ethernet_t {
-  bit<48> dstAddr;
-  bit<48> srcAddr;
-  bit<16> etherType;
-}
 
-header sml_t {
-  /* TODO: Define me */
-  bit<8> rank;
-  bit<128> vector;
-}
-
-struct headers {
-  ethernet_t eth;
-  sml_t sml;
-}
-
-struct metadata { /* empty */ }
 
 parser TheParser(packet_in packet,
                  out headers hdr,
@@ -40,6 +24,10 @@ parser TheParser(packet_in packet,
   }
   state parse_sml {
     packet.extract(hdr.sml);
+    transition parse_vector;
+  }
+  state parse_vector {
+    packet.extract(hdr.vector);
     transition accept;
   }
 }
@@ -48,23 +36,31 @@ control TheIngress(inout headers hdr,
                    inout metadata meta,
                    inout standard_metadata_t standard_metadata) {
                     
-  action sml_aggr() {
-    standard_metadata.mcast_grp = 1;
-  }
-  table sml_table {
-    key = {
-      hdr.eth.etherType: exact;
-      // hdr.sml.rank: lpm;
-    }
-    actions = {
-      sml_aggr;
-    }
-    size = 1024;
-    default_action = sml_aggr();
-  }
+
+  // register<bit<32>>(1) reg;
+  // action sml_aggr() {
+  //   // bit<32> elem_tmp
+  //   standard_metadata.mcast_grp = 1;
+  // }
+  // table sml_table {
+  //   key = {
+  //     hdr.eth.etherType: exact;
+
+  //   }
+  //   actions = {
+  //     sml_aggr;
+  //   }
+  //   size = 1024;
+  //   default_action = sml_aggr();
+  // }
+  Aggregate() elem00_ctrl;
+  Aggregate() elem01_ctrl;
   apply {
-    /* TODO: Implement me */
-    sml_table.apply();
+    // sml_table.apply();
+    // elem01_ctrl.apply(hdr, 1, hdr.vector.elem01, standard_metadata);
+    /* hdr, index, elem_in, std_meta */
+    elem00_ctrl.apply(hdr/*, 0*/, hdr.vector.elem00, standard_metadata);
+    elem01_ctrl.apply(hdr/*, 1*/, hdr.vector.elem01, standard_metadata);
   }
 }
 
@@ -92,6 +88,7 @@ control TheDeparser(packet_out packet, in headers hdr) {
   apply {
     packet.emit(hdr.eth);
     packet.emit(hdr.sml);
+    packet.emit(hdr.vector);
   }
 }
 

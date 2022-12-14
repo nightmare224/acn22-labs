@@ -10,7 +10,7 @@ from scapy.sendrecv import srp
 
 NUM_ITER   = 1     # TODO: Make sure your program can handle larger values
 # how much data in each packet
-CHUNK_SIZE = 4  # TODO: Define me
+CHUNK_SIZE = 2  # TODO: Define me
 ETH_TYPE = 0x8787
 
 class SwitchML(Packet):
@@ -20,7 +20,7 @@ class SwitchML(Packet):
         # SourceMACField("src"),
         # XShortEnumField("type", ETH_TYPE),
         ByteField("rank", 0),
-        # BitField("value", 0, 32)
+        BitField("curr_elem_idx", 0, 32),
         FieldListField("vector", CHUNK_SIZE, BitField("element", 0, 32))
         # TODO: Implement me
     ]
@@ -46,7 +46,7 @@ def AllReduce(iface, rank, data, result):
     # store the value in data-in
     # for i in range(int(len(data)/CHUNK_SIZE)):
     for i in range(1):
-        packet_send = Ether(type=ETH_TYPE) / SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
+        packet_send = Ether(type=ETH_TYPE) / SwitchML(rank=rank, curr_elem_idx=0, vector=[10, 10])#SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
         packet_recv = srp(x = packet_send, iface = iface)
         # Log(packet.show())
 
