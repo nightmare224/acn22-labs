@@ -12,6 +12,7 @@ header ethernet_h {
 header sml_h {
   /* TODO: Define me */
   bit<8> rank;
+  bit<8> chuck_size;
   bit<32> curr_elem_idx;
   // bit<128> vector;
 }

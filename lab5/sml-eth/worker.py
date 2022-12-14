@@ -20,8 +20,9 @@ class SwitchML(Packet):
         # SourceMACField("src"),
         # XShortEnumField("type", ETH_TYPE),
         ByteField("rank", 0),
+        ByteField("chunk_size", 1),
         BitField("curr_elem_idx", 0, 32),
-        FieldListField("vector", CHUNK_SIZE, BitField("element", 0, 32))
+        # FieldListField("vector", CHUNK_SIZE, BitField("element", 0, 32))
         # TODO: Implement me
     ]
     # design header format, use scapy
@@ -45,8 +46,16 @@ def AllReduce(iface, rank, data, result):
     # packet should contain rank (id) and data-out
     # store the value in data-in
     # for i in range(int(len(data)/CHUNK_SIZE)):
+    
     for i in range(1):
-        packet_send = Ether(type=ETH_TYPE) / SwitchML(rank=rank, curr_elem_idx=0, vector=[10, 10])#SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
+        payload = bytearray()
+        for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
+            payload.extend(num.to_bytes(length=4, byteorder="big"))
+        packet_send = Ether(type=ETH_TYPE) / SwitchML(rank=rank, chunk_size=CHUNK_SIZE, curr_elem_idx=0) / Raw(payload)#SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
+        # print(packet_send[SwitchML].display())
+        # print(packet_send[SwitchML].payload)
+        # print(packet_send[SwitchML].fields)
+        # print(packet_send.payload)
         packet_recv = srp(x = packet_send, iface = iface)
         # Log(packet.show())
 
