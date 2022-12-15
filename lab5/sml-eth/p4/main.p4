@@ -6,7 +6,6 @@
 #include "config.p4"
 
 
-
 parser TheParser(packet_in packet,
                  out headers hdr,
                  inout metadata meta,
@@ -64,9 +63,9 @@ control TheIngress(inout headers hdr,
     meta.curr_elem_idx = 0;
     worker_arrive();
   }
-  action drop() {
-    mark_to_drop(standard_metadata);
-  }
+  // action drop() {
+  //   mark_to_drop(standard_metadata);
+  // }
   table sml_ctrl {
     key = {
       hdr.eth.etherType: exact;
@@ -74,7 +73,7 @@ control TheIngress(inout headers hdr,
     actions = {
       sml_md_set;
       NoAction;
-      drop;
+      // drop;
     }
     const entries = {
       (sml_eth_type): sml_md_set();
@@ -86,10 +85,8 @@ control TheIngress(inout headers hdr,
   Aggregate() elem01_ctrl;
   Aggregate() elem02_ctrl;
   apply {
-    sml_ctrl.apply();
-    // elem01_ctrl.apply(hdr, 1, hdr.vector.elem01, standard_metadata);
-    /* hdr, index, elem_in, std_meta */
     if(hdr.eth.etherType == sml_eth_type){
+      sml_ctrl.apply();
       elem00_ctrl.apply(hdr.vector.elem00, hdr.vector.elem00, meta, standard_metadata);
       elem01_ctrl.apply(hdr.vector.elem01, hdr.vector.elem01, meta, standard_metadata);
       elem02_ctrl.apply(hdr.vector.elem02, hdr.vector.elem02, meta, standard_metadata);

@@ -42,34 +42,27 @@ def AllReduce(iface, rank, data, result):
 
     This function is blocking, i.e. only returns with a result or error
     """
-
-    # perform allreduce on data and run result on result vector
-    # TODO: Implement me
-    # send the data-out to iface (eth0)
-    # packet should contain rank (id) and data-out
-    # store the value in data-in
     # for i in range(int(len(data)/CHUNK_SIZE)):
-
-    for i in range(1):
+    for i in range(2):
         payload = bytearray()
-        # for i in range(6):
-        #     payload.append(1)
-        # for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
-        for num in [1, 1, 1]:
+        for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
+        # for num in [1, 1, 1]:
             payload.extend(num.to_bytes(length=4, byteorder="big"))
-        #     payload.append(0)
-        # payload[-1] = 0x01
-        packet_send = (
+
+        pkt_snd = (
             Ether(type=ETH_TYPE) /
             SwitchML(rank=rank, num_workers=NUM_WORKERS) /
             Raw(payload)
-        )  # SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
+        )
+        # SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
         # print(packet_send[SwitchML].display())
         # print(packet_send[SwitchML].payload)
         # print(packet_send[SwitchML].fields)
         # print(packet_send.payload)
-        packet_recv = srp(x=packet_send, iface=iface)
-        # Log(packet.show())
+        pkt_rcv, _ = srp(x=pkt_snd, iface=iface)
+        Log(pkt_snd.show())
+        Log(pkt_rcv.show())
+        print(result)
 
 
 def main():

@@ -13,6 +13,9 @@ control Aggregate(in elem_t elem_in,
 
   register<bit<32>>(32) elem_sum_reg;
   //TODO: may be move the current_elem_in to inout, so it access by next stage
+  action broadcast() {
+    standard_metadata.mcast_grp = 1;
+  }
   action aggr(bit<32> elem_idx) {
     bit<32> elem_tmp = 0;
 
@@ -29,7 +32,9 @@ control Aggregate(in elem_t elem_in,
 
     /* plus 1 before go to next stage */
     meta.curr_elem_idx = meta.curr_elem_idx + 1;
-    standard_metadata.mcast_grp = 1;
+    if(meta.all_worker_arrive){
+      broadcast();
+    }
   }
   table sum {
     key = {
