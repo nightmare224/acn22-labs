@@ -6,33 +6,38 @@
 #include "types.p4"
 
 
-control Aggregate(inout headers hdr, 
+control Aggregate(inout bit<32> curr_elem_idx,
+                  //inout headers hdr, 
                   // in bit<32> index, 
-                  // in elem_t elem_in, 
-                  inout standard_metadata_t standard_metadata/*, out elem_t elem_out*/){
+                  in elem_t elem_in,
+                  out elem_t elem_out, 
+                  inout standard_metadata_t standard_metadata){
 
-  register<bit<32>>(64) reg;
+  register<bit<32>>(96) reg;
   //TODO: may be move the current_elem_in to inout, so it access by next stage
   action aggr(bit<32> elem_idx) {
     bit<32> elem_tmp = 0;
 
+    
     /* read the data from register */
     reg.read(elem_tmp, elem_idx);
     /* aggregate current value and register value */
-    elem_tmp = elem_tmp + hdr.vector[hdr.sml.curr_elem_idx].elem;
+    elem_tmp = elem_tmp + elem_in;
     /* write new value to register */
     reg.write(elem_idx, elem_tmp);
     /* write new value to header (Should only be write if all worker do it, should remove this part ) */
-    hdr.vector[hdr.sml.curr_elem_idx].elem = elem_tmp;
+    elem_out = elem_tmp;
 
 
     /* plus 1 before go to next stage */
-    hdr.sml.curr_elem_idx = hdr.sml.curr_elem_idx + 1;
+    curr_elem_idx = curr_elem_idx + 1;
+    // hdr.sml.curr_elem_idx = hdr.sml.curr_elem_idx + 1;
     standard_metadata.mcast_grp = 1;
   }
   table sum {
     key = {
-      hdr.sml.curr_elem_idx: exact;
+      // hdr.sml.curr_elem_idx: exact;
+      curr_elem_idx: exact;
     }
     actions = {
       aggr;
@@ -43,6 +48,7 @@ control Aggregate(inout headers hdr,
       /* do aggregate on reg[idx] based on key(curr_elem_idx) */
       (0): aggr(0);
       (1): aggr(1);
+      (2): aggr(2);
     }
     default_action = NoAction();
   }

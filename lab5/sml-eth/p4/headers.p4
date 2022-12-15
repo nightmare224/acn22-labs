@@ -14,21 +14,22 @@ header sml_h {
   bit<8> rank;
   bit<8> chuck_size;
   bit<32> curr_elem_idx;
-  // bit<128> vector;
 }
 
 header elem_h {
-  // elem_t[32] elem;
-  elem_t elem;
-  bit<8> bos;   /* bottom of stack */
-  // bit<32> elem00;
-  // bit<32> elem01;
+  // elem_t elem;
+  // bit<8> bos;   /* bottom of stack */
+  /* success when change bit<32> to elem_t (???why */
+  elem_t elem00;
+  elem_t elem01;
+  elem_t elem02;
 }
 
 struct headers {
   ethernet_h eth;
   sml_h sml;
-  elem_h[32] vector;
+  elem_h vector;
+  // elem_h[32] vector;
 }
 
 struct metadata { 

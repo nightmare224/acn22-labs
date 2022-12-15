@@ -27,12 +27,14 @@ parser TheParser(packet_in packet,
     transition parse_vector;
   }
   state parse_vector {
-    packet.extract(hdr.vector.next);
-    // transition accept;
-    transition select(hdr.vector.last.bos) {
-      0: parse_vector;
-      1: accept;
-    }
+    packet.extract(hdr.vector);
+    transition accept;
+
+    // packet.extract(hdr.vector.next);
+    // transition select(hdr.vector.last.bos) {
+    //   0: parse_vector;
+    //   1: accept;
+    // }
   }
 }
 
@@ -59,12 +61,14 @@ control TheIngress(inout headers hdr,
   // }
   Aggregate() elem00_ctrl;
   Aggregate() elem01_ctrl;
+  Aggregate() elem02_ctrl;
   apply {
     // sml_table.apply();
     // elem01_ctrl.apply(hdr, 1, hdr.vector.elem01, standard_metadata);
     /* hdr, index, elem_in, std_meta */
-    elem00_ctrl.apply(hdr/*, hdr.vector.elem00*/, standard_metadata);
-    elem01_ctrl.apply(hdr/*, hdr.vector.elem01*/, standard_metadata);
+    elem00_ctrl.apply(hdr.sml.curr_elem_idx, hdr.vector.elem00, hdr.vector.elem00, standard_metadata);
+    elem01_ctrl.apply(hdr.sml.curr_elem_idx, hdr.vector.elem01, hdr.vector.elem01, standard_metadata);
+    elem02_ctrl.apply(hdr.sml.curr_elem_idx, hdr.vector.elem02, hdr.vector.elem02, standard_metadata);
   }
 }
 

@@ -23,7 +23,7 @@ class SwitchML(Packet):
         # XShortEnumField("type", ETH_TYPE),
         ByteField("rank", 0),
         ByteField("chunk_size", 1),
-        BitField("curr_elem_idx", 0, 32),
+        BitField("curr_elem_idx", 0, 32)
         # FieldListField("vector", CHUNK_SIZE, BitField("element", 0, 32))
         # TODO: Implement me
     ]
@@ -52,13 +52,13 @@ def AllReduce(iface, rank, data, result):
 
     for i in range(1):
         payload = bytearray()
+        # for i in range(6):
+        #     payload.append(1)
         # for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
-        for num in [16, 32]:
+        for num in [1, 1, 1]:
             payload.extend(num.to_bytes(length=4, byteorder="big"))
-            payload.append(0)
-        payload[-1] = 0x01
-        # payload = payload & 0x01.to_bytes(length=1, byteorder="big")
-        
+        #     payload.append(0)
+        # payload[-1] = 0x01
         packet_send = (
             Ether(type=ETH_TYPE)
             / SwitchML(rank=rank, chunk_size=CHUNK_SIZE, curr_elem_idx=0)
