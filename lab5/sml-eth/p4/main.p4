@@ -30,6 +30,12 @@ parser TheParser(packet_in packet,
   }
 }
 
+control TheChecksumVerification(inout headers hdr, inout metadata meta) {
+  apply {
+    /* TODO: Implement me (if needed) */
+  }
+}
+
 control TheIngress(inout headers hdr,
                    inout metadata meta,
                    inout standard_metadata_t standard_metadata) {
@@ -151,12 +157,6 @@ control TheIngress(inout headers hdr,
 control TheEgress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
-  apply {
-    /* TODO: Implement me (if needed) */
-  }
-}
-
-control TheChecksumVerification(inout headers hdr, inout metadata meta) {
   apply {
     /* TODO: Implement me (if needed) */
   }
