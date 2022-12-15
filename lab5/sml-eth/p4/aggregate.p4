@@ -6,11 +6,9 @@
 #include "types.p4"
 
 
-control Aggregate(inout bit<32> curr_elem_idx,
-                  //inout headers hdr, 
-                  // in bit<32> index, 
-                  in elem_t elem_in,
+control Aggregate(in elem_t elem_in,
                   out elem_t elem_out, 
+                  inout metadata meta,
                   inout standard_metadata_t standard_metadata){
 
   register<bit<32>>(32) reg;
@@ -30,14 +28,12 @@ control Aggregate(inout bit<32> curr_elem_idx,
 
 
     /* plus 1 before go to next stage */
-    curr_elem_idx = curr_elem_idx + 1;
-    // hdr.sml.curr_elem_idx = hdr.sml.curr_elem_idx + 1;
+    meta.curr_elem_idx = meta.curr_elem_idx + 1;
     standard_metadata.mcast_grp = 1;
   }
   table sum {
     key = {
-      // hdr.sml.curr_elem_idx: exact;
-      curr_elem_idx: exact;
+      meta.curr_elem_idx: exact;
     }
     actions = {
       aggr;

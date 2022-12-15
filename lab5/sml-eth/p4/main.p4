@@ -3,7 +3,7 @@
 #include "headers.p4"
 #include "types.p4"
 #include "aggregate.p4"
-
+#include "config.p4"
 
 
 
@@ -18,7 +18,7 @@ parser TheParser(packet_in packet,
   state parse_ethernet {
     packet.extract(hdr.eth);
     transition select(hdr.eth.etherType) {
-      0x8787: parse_sml;
+      sml_eth_type: parse_sml;
       default: accept;
     }
   }
@@ -59,6 +59,9 @@ control TheIngress(inout headers hdr,
   //   size = 1024;
   //   default_action = sml_aggr();
   // }
+  action worker_count() {
+    meta.curr_elem_idx = 0;
+  }
   action drop() {
       mark_to_drop(standard_metadata);
   }
@@ -67,13 +70,14 @@ control TheIngress(inout headers hdr,
       hdr.eth.etherType: exact;
     }
     actions = {
+      worker_count;
       NoAction;
       drop();
     }
     const entries = {
-      (0x8787): NoAction();
+      (sml_eth_type): worker_count();
     }
-    default_action = drop();
+    default_action = NoAction();
   }
 
   Aggregate() elem00_ctrl;
@@ -83,10 +87,10 @@ control TheIngress(inout headers hdr,
     // sml_table.apply();
     // elem01_ctrl.apply(hdr, 1, hdr.vector.elem01, standard_metadata);
     /* hdr, index, elem_in, std_meta */
-    if(hdr.eth.etherType == 0x8787){
-      elem00_ctrl.apply(hdr.sml.curr_elem_idx, hdr.vector.elem00, hdr.vector.elem00, standard_metadata);
-      elem01_ctrl.apply(hdr.sml.curr_elem_idx, hdr.vector.elem01, hdr.vector.elem01, standard_metadata);
-      elem02_ctrl.apply(hdr.sml.curr_elem_idx, hdr.vector.elem02, hdr.vector.elem02, standard_metadata);
+    if(hdr.eth.etherType == sml_eth_type){
+      elem00_ctrl.apply(hdr.vector.elem00, hdr.vector.elem00, meta, standard_metadata);
+      elem01_ctrl.apply(hdr.vector.elem01, hdr.vector.elem01, meta, standard_metadata);
+      elem02_ctrl.apply(hdr.vector.elem02, hdr.vector.elem02, meta, standard_metadata);
     }
 
   }

@@ -4,22 +4,20 @@
 #include "types.p4"
 
 header ethernet_h {
-  bit<48> dstAddr;
-  bit<48> srcAddr;
-  bit<16> etherType;
+  mac_addr_t dstAddr;
+  mac_addr_t srcAddr;
+  eth_type_t etherType;
 }
 
 header sml_h {
   /* TODO: Define me */
   bit<8> rank;
   bit<8> chuck_size;
-  bit<32> curr_elem_idx;
 }
 
 header elem_h {
   // elem_t elem;
   // bit<8> bos;   /* bottom of stack */
-  /* success when change bit<32> to elem_t (???why */
   elem_t elem00;
   elem_t elem01;
   elem_t elem02;
@@ -33,7 +31,7 @@ struct headers {
 }
 
 struct metadata { 
-  // bit<32> curr_elem_in;
+  bit<32> curr_elem_idx;
 }
 
 #endif
