@@ -13,7 +13,7 @@ control Aggregate(inout bit<32> curr_elem_idx,
                   out elem_t elem_out, 
                   inout standard_metadata_t standard_metadata){
 
-  register<bit<32>>(96) reg;
+  register<bit<32>>(32) reg;
   //TODO: may be move the current_elem_in to inout, so it access by next stage
   action aggr(bit<32> elem_idx) {
     bit<32> elem_tmp = 0;
