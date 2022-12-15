@@ -32,6 +32,7 @@ struct headers {
 
 struct metadata { 
   bit<32> curr_elem_idx;
+  bool all_worker_arrive;
 }
 
 #endif

@@ -11,18 +11,18 @@ control Aggregate(in elem_t elem_in,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata){
 
-  register<bit<32>>(32) reg;
+  register<bit<32>>(32) elem_sum_reg;
   //TODO: may be move the current_elem_in to inout, so it access by next stage
   action aggr(bit<32> elem_idx) {
     bit<32> elem_tmp = 0;
 
     
     /* read the data from register */
-    reg.read(elem_tmp, elem_idx);
+    elem_sum_reg.read(elem_tmp, elem_idx);
     /* aggregate current value and register value */
     elem_tmp = elem_tmp + elem_in;
     /* write new value to register */
-    reg.write(elem_idx, elem_tmp);
+    elem_sum_reg.write(elem_idx, elem_tmp);
     /* write new value to header (Should only be write if all worker do it, should remove this part ) */
     elem_out = elem_tmp;
 
