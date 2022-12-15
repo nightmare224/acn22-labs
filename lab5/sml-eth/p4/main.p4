@@ -42,27 +42,10 @@ control TheIngress(inout headers hdr,
                    inout metadata meta,
                    inout standard_metadata_t standard_metadata) {
                     
-
-  // register<bit<32>>(1) reg;
-  // action sml_aggr() {
-  //   // bit<32> elem_tmp
-  //   standard_metadata.mcast_grp = 1;
-  // }
-  // table sml_table {
-  //   key = {
-  //     hdr.eth.etherType: exact;
-
-  //   }
-  //   actions = {
-  //     sml_aggr;
-  //   }
-  //   size = 1024;
-  //   default_action = sml_aggr();
-  // }
   /* worker arrive or not */
   register<bit<8>>(1) worker_arrive_reg;
-  action worker_count() {
-    meta.curr_elem_idx = 0;
+
+  action worker_arrive() {
     /* record the work have count */
     bit<8> worker_arrive_tmp;
     bit<8> mask = (bit<8>)0xff << hdr.sml.num_workers;
@@ -70,11 +53,16 @@ control TheIngress(inout headers hdr,
     worker_arrive_tmp = worker_arrive_tmp | ((bit<8>)1 << hdr.sml.rank);
     if(worker_arrive_tmp | mask == 0xff){
       meta.all_worker_arrive = true;
+      /* if all worker arrive, clean register to zero */
       worker_arrive_tmp = 0x00;
     }else{
       meta.all_worker_arrive = false;
     }
     worker_arrive_reg.write(0, worker_arrive_tmp);
+  }
+  action sml_md_set() {
+    meta.curr_elem_idx = 0;
+    worker_arrive();
   }
   action drop() {
     mark_to_drop(standard_metadata);
@@ -84,12 +72,12 @@ control TheIngress(inout headers hdr,
       hdr.eth.etherType: exact;
     }
     actions = {
-      worker_count;
+      sml_md_set;
       NoAction;
       drop;
     }
     const entries = {
-      (sml_eth_type): worker_count();
+      (sml_eth_type): sml_md_set();
     }
     default_action = NoAction();
   }
