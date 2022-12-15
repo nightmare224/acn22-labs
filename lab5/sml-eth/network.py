@@ -1,18 +1,16 @@
-from lib import config  # do not import anything before this
-from p4app import P4Mininet
-from mininet.topo import Topo
-from mininet.cli import CLI
-from pathlib import PurePath
 from os import environ
-from config import NUM_WORKERS
+from pathlib import PurePath
+from mininet.cli import CLI
+from mininet.topo import Topo
+from lib import config
+from p4app import P4Mininet
+from constant import NUM_WORKERS
 
 
 class SMLTopo(Topo):
     def __init__(self, **opts):
         Topo.__init__(self, **opts)
         # add host and add link
-        # TODO: Implement me. Feel free to modify the constructor signature
-        # NOTE: Make sure worker names are consistent with RunWorkers() below
 
     def build(self):
         switch = self.addSwitch("s1")
@@ -45,11 +43,7 @@ def RunControlPlane(net):
     One-time control plane configuration
     """
     # like insert table entry
-    # TODO: Implement me (if needed)
-    # print(net.__dir__())
-    # print(net.switches[0].ports)
     switch = net.switches[0]
-    # print(net.switches[0].name)
     # the ports is {<Intf lo>: 0, <Intf s1-eth1>: 1, <Intf s1-eth2>: 2}
     ports = [value
              for key, value in switch.ports.items()
