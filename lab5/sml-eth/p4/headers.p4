@@ -12,7 +12,7 @@ header ethernet_h {
 header sml_h {
   /* TODO: Define me */
   bit<8> rank;
-  bit<8> chuck_size;
+  bit<8> num_workers;
 }
 
 header elem_h {

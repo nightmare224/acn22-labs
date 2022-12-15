@@ -2,9 +2,9 @@ from lib import config  # do not import anything before this
 from p4app import P4Mininet
 from mininet.topo import Topo
 from mininet.cli import CLI
-import os
-
-NUM_WORKERS = 2  # TODO: Make sure your program can handle larger values
+from pathlib import PurePath
+from os import environ
+from config import NUM_WORKERS
 
 
 class SMLTopo(Topo):
@@ -28,12 +28,14 @@ def RunWorkers(net):
     This function assumes worker i is named 'w<i>'. Feel free to modify it
     if your naming scheme is different
     """
-    worker = lambda rank: "w%i" % rank
-    log_file = lambda rank: os.path.join(
-        os.environ["APP_LOGS"], "%s.log" % worker(rank)
-    )
+    def worker(rank):
+        return f"w{rank}"
+
+    def log_file(rank):
+        return PurePath(environ["APP_LOGS"]).joinpath(f"{worker(rank)}.log")
+
     for i in range(NUM_WORKERS):
-        net.get(worker(i)).sendCmd("python worker.py %d > %s" % (i, log_file(i)))
+        net.get(worker(i)).sendCmd(f"python worker.py {i} > {log_file(i)}")
     for i in range(NUM_WORKERS):
         net.get(worker(i)).waitOutput()
 
@@ -47,12 +49,11 @@ def RunControlPlane(net):
     # print(net.__dir__())
     # print(net.switches[0].ports)
     switch = net.switches[0]
-    print(net.switches[0].name)
-    ports = []
+    # print(net.switches[0].name)
     # the ports is {<Intf lo>: 0, <Intf s1-eth1>: 1, <Intf s1-eth2>: 2}
-    for key in switch.ports:
-        if str(key).startswith(switch.name):
-            ports.append(switch.ports[key])
+    ports = [value
+             for key, value in switch.ports.items()
+             if key.name.startswith(switch.name)]
     switch.addMulticastGroup(mgid=1, ports=ports)
     # switch.printTableEntries()
     # print(switch.p4info_helper.p4info.tables[0].match_fields[0])

@@ -1,13 +1,14 @@
 from lib.gen import GenInts, GenMultipleOfInRange
 from lib.test import CreateTestData, RunIntTest
-from lib.worker import *
+from lib.worker import GetRankOrExit, Log
 from scapy.all import Packet
 from scapy.layers.inet import Ether
 from scapy.packet import Raw
-
 # from scapy.layers.l2 import DestMACField, SourceMACField
-from scapy.fields import ByteField, BitField, FieldListField
+from scapy.fields import ByteField
+# from scapy.fields import BitField, FieldListField
 from scapy.sendrecv import srp
+from config import NUM_WORKERS
 
 NUM_ITER = 1  # TODO: Make sure your program can handle larger values
 # how much data in each packet
@@ -22,7 +23,7 @@ class SwitchML(Packet):
         # SourceMACField("src"),
         # XShortEnumField("type", ETH_TYPE),
         ByteField("rank", 0),
-        ByteField("chunk_size", 1)
+        ByteField("num_workers", 1)
         # FieldListField("vector", CHUNK_SIZE, BitField("element", 0, 32))
         # TODO: Implement me
     ]
@@ -59,9 +60,9 @@ def AllReduce(iface, rank, data, result):
         #     payload.append(0)
         # payload[-1] = 0x01
         packet_send = (
-            Ether(type=ETH_TYPE)
-            / SwitchML(rank=rank, chunk_size=CHUNK_SIZE)
-            / Raw(payload) 
+            Ether(type=ETH_TYPE) /
+            SwitchML(rank=rank, num_workers=NUM_WORKERS) /
+            Raw(payload)
         )  # SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
         # print(packet_send[SwitchML].display())
         # print(packet_send[SwitchML].payload)
@@ -78,9 +79,8 @@ def main():
     Log("Started...")
     # image this is model training loop
     for i in range(NUM_ITER):
-        num_elem = GenMultipleOfInRange(
-            2, 2048, 2 * CHUNK_SIZE
-        )  # You may want to 'fix' num_elem for debugging
+        # You may want to 'fix' num_elem for debugging
+        num_elem = GenMultipleOfInRange(2, 2048, 2 * CHUNK_SIZE)
         # the data generate in local
         data_out = GenInts(num_elem)
         # Log(data_out)
@@ -88,10 +88,10 @@ def main():
         # the result of data would receive after call the reduce
         data_in = GenInts(num_elem, 0)
         # test on data can ignore now
-        CreateTestData("eth-iter-%d" % i, rank, data_out)
+        CreateTestData(f"eth-iter-{i}", rank, data_out)
         # do all reduce and then get the result (data_out)
         AllReduce(iface, rank, data_out, data_in)
-        RunIntTest("eth-iter-%d" % i, rank, data_in, True)
+        RunIntTest(f"eth-iter-{i}", rank, data_in, True)
     Log("Done")
 
 
