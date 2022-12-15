@@ -12,7 +12,7 @@ from config import NUM_WORKERS
 
 NUM_ITER = 1  # TODO: Make sure your program can handle larger values
 # how much data in each packet
-CHUNK_SIZE = 2  # TODO: Define me
+CHUNK_SIZE = 3  # TODO: Define me
 ETH_TYPE = 0x8787
 
 
@@ -45,8 +45,8 @@ def AllReduce(iface, rank, data, result):
     # for i in range(int(len(data)/CHUNK_SIZE)):
     for i in range(2):
         payload = bytearray()
-        for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
-        # for num in [1, 1, 1]:
+        # for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
+        for num in [1, 1, 1]:
             payload.extend(num.to_bytes(length=4, byteorder="big"))
 
         pkt_snd = (
@@ -59,10 +59,19 @@ def AllReduce(iface, rank, data, result):
         # print(packet_send[SwitchML].payload)
         # print(packet_send[SwitchML].fields)
         # print(packet_send.payload)
+        # pkt_rcv, _ = srp(x=pkt_snd, iface=iface)
         pkt_rcv, _ = srp(x=pkt_snd, iface=iface)
-        Log(pkt_snd.show())
-        Log(pkt_rcv.show())
-        print(result)
+        # print(pkt_rcv.res)
+        # print(f"load: {pkt_rcv.res[0][1].payload}")
+        # print(SwitchML(pkt_rcv.res[0][1].payload).payload.load)
+        # print(f"payload: {pkt_rcv.res[0][1].payload.payload.payload}")
+        for j in range(CHUNK_SIZE):
+            result[i * CHUNK_SIZE + j] = int.from_bytes(
+                SwitchML(pkt_rcv.res[0][1].payload).payload.load[j * 4: (j + 1) * 4], "big")
+        # Log(pkt_rcv)
+        # Log(pkt_snd.show())
+        # Log(pkt_rcv.show())
+        # print(result)
 
 
 def main():
@@ -84,6 +93,7 @@ def main():
         CreateTestData(f"eth-iter-{i}", rank, data_out)
         # do all reduce and then get the result (data_out)
         AllReduce(iface, rank, data_out, data_in)
+        print(f"iter {i}: {data_in}")
         RunIntTest(f"eth-iter-{i}", rank, data_in, True)
     Log("Done")
 
