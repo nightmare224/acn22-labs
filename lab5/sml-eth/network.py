@@ -4,7 +4,7 @@ from mininet.cli import CLI
 from mininet.topo import Topo
 from lib import config
 from p4app import P4Mininet
-from constant import NUM_WORKERS
+from config import NUM_WORKERS
 
 
 class SMLTopo(Topo):

@@ -13,7 +13,7 @@ from scapy.layers.inet import Ether
 # from scapy.layers.l2 import SourceMACField
 from scapy.packet import Raw
 from scapy.sendrecv import srp
-from constant import NUM_WORKERS
+from config import NUM_WORKERS
 
 NUM_ITER = 1  # TODO: Make sure your program can handle larger values
 # how much data in each packet

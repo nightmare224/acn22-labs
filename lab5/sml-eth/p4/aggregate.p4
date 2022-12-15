@@ -1,4 +1,3 @@
-
 #ifndef _AGGREGATE_H
 #define _AGGREGATE_H
 
@@ -87,6 +86,5 @@ control Aggregate(in elem_t elem_in,
     sum.apply();
   }
 }
-
 
 #endif
