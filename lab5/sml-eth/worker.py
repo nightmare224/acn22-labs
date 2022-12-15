@@ -4,8 +4,10 @@ from lib.worker import GetRankOrExit, Log
 from scapy.all import Packet
 from scapy.layers.inet import Ether
 from scapy.packet import Raw
+
 # from scapy.layers.l2 import DestMACField, SourceMACField
 from scapy.fields import ByteField
+
 # from scapy.fields import BitField, FieldListField
 from scapy.sendrecv import srp
 from config import NUM_WORKERS
@@ -42,17 +44,17 @@ def AllReduce(iface, rank, data, result):
 
     This function is blocking, i.e. only returns with a result or error
     """
-    # for i in range(int(len(data)/CHUNK_SIZE)):
-    for i in range(2):
+    for i in range(int(len(data)/CHUNK_SIZE)):
+    # for i in range(2):
         payload = bytearray()
-        # for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
-        for num in [1, 1, 1]:
+        for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
+        # for num in [1, 1, 1]:
             payload.extend(num.to_bytes(length=4, byteorder="big"))
 
         pkt_snd = (
-            Ether(type=ETH_TYPE) /
-            SwitchML(rank=rank, num_workers=NUM_WORKERS) /
-            Raw(payload)
+            Ether(type=ETH_TYPE)
+            / SwitchML(rank=rank, num_workers=NUM_WORKERS)
+            / Raw(payload)
         )
         # SwitchML(rank=rank, vector=data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
         # print(packet_send[SwitchML].display())
@@ -67,7 +69,9 @@ def AllReduce(iface, rank, data, result):
         # print(f"payload: {pkt_rcv.res[0][1].payload.payload.payload}")
         for j in range(CHUNK_SIZE):
             result[i * CHUNK_SIZE + j] = int.from_bytes(
-                SwitchML(pkt_rcv.res[0][1].payload).payload.load[j * 4: (j + 1) * 4], "big")
+                SwitchML(pkt_rcv.res[0][1].payload).payload.load[j * 4 : (j + 1) * 4],
+                "big",
+            )
         # Log(pkt_rcv)
         # Log(pkt_snd.show())
         # Log(pkt_rcv.show())

@@ -24,17 +24,19 @@ control Aggregate(in elem_t elem_in,
     elem_sum_reg.read(elem_tmp, elem_idx);
     /* aggregate current value and register value */
     elem_tmp = elem_tmp + elem_in;
-    /* write new value to register */
-    elem_sum_reg.write(elem_idx, elem_tmp);
     /* write new value to header (Should only be write if all worker do it, should remove this part ) */
     elem_out = elem_tmp;
 
+    if(meta.all_worker_arrive){
+      /* clean register to zero if it is last arrived worker */
+      elem_tmp = 0;
+      broadcast();
+    }
+    /* write new value to register */
+    elem_sum_reg.write(elem_idx, elem_tmp);
 
     /* plus 1 before go to next stage */
     meta.curr_elem_idx = meta.curr_elem_idx + 1;
-    if(meta.all_worker_arrive){
-      broadcast();
-    }
   }
   table sum {
     key = {
