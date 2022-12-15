@@ -19,7 +19,6 @@ control Aggregate(in elem_t elem_in,
   action aggr(bit<32> elem_idx) {
     bit<32> elem_tmp = 0;
 
-    
     /* read the data from register */
     elem_sum_reg.read(elem_tmp, elem_idx);
     /* aggregate current value and register value */
