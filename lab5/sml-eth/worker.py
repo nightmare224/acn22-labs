@@ -19,6 +19,7 @@ from config import NUM_WORKERS
 NUM_ITER = 1  # TODO: Make sure your program can handle larger values
 # how much data in each packet
 CHUNK_SIZE = 32
+MAC_ADDR = get_if_hwaddr("eth0")
 ETH_TYPE = 0x8787
 
 
@@ -55,7 +56,7 @@ def AllReduce(iface, rank, data, result):
             payload.extend(num.to_bytes(length=4, byteorder="big"))
 
         pkt_snd = (
-            Ether(src=get_if_hwaddr("eth0"), type=ETH_TYPE) /
+            Ether(src=MAC_ADDR, type=ETH_TYPE) /
             SwitchML(rank=rank, num_workers=NUM_WORKERS) /
             Raw(payload)
         )
