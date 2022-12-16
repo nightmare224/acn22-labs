@@ -6,7 +6,8 @@ from scapy.layers.l2 import Ether
 from scapy.layers.inet import IP
 from scapy.layers.inet import UDP
 from scapy.packet import Raw
-import socket
+from socket import SOCK_DGRAM
+from socket import socket
 from lib.gen import GenInts
 from lib.gen import GenMultipleOfInRange
 from lib.test import CreateTestData
@@ -70,7 +71,7 @@ def AllReduce(soc, rank, data, result):
 def main():
     rank = GetRankOrExit()
 
-    s = None  # TODO: Create a UDP socket.
+    s = socket(type=SOCK_DGRAM)
     # NOTE: This socket will be used for all AllReduce calls.
     #       Feel free to go with a different design (e.g. multiple sockets)
     #       if you want to, but make sure the loop below still works
@@ -85,6 +86,7 @@ def main():
         AllReduce(s, rank, data_out, data_in)
         RunIntTest(f"udp-iter-{i}", rank, data_in, True)
     Log("Done")
+    s.close()
 
 
 if __name__ == '__main__':
