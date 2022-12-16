@@ -1,18 +1,19 @@
+from scapy.all import get_if_hwaddr
+from scapy.all import Packet
+# from scapy.fields import BitField
+from scapy.fields import ByteField
+# from scapy.fields import FieldListField
+from scapy.layers.l2 import Ether
+# from scapy.layers.l2 import DestMACField
+# from scapy.layers.l2 import SourceMACField
+from scapy.packet import Raw
+from scapy.sendrecv import srp
 from lib.gen import GenInts
 from lib.gen import GenMultipleOfInRange
 from lib.test import CreateTestData
 from lib.test import RunIntTest
 from lib.worker import GetRankOrExit
 from lib.worker import Log
-from scapy.all import Packet
-# from scapy.fields import BitField
-from scapy.fields import ByteField
-# from scapy.fields import FieldListField
-from scapy.layers.inet import Ether
-# from scapy.layers.l2 import DestMACField
-# from scapy.layers.l2 import SourceMACField
-from scapy.packet import Raw
-from scapy.sendrecv import srp
 from config import NUM_WORKERS
 
 NUM_ITER = 1  # TODO: Make sure your program can handle larger values
@@ -54,7 +55,7 @@ def AllReduce(iface, rank, data, result):
             payload.extend(num.to_bytes(length=4, byteorder="big"))
 
         pkt_snd = (
-            Ether(type=ETH_TYPE) /
+            Ether(src=get_if_hwaddr("eth0"), type=ETH_TYPE) /
             SwitchML(rank=rank, num_workers=NUM_WORKERS) /
             Raw(payload)
         )

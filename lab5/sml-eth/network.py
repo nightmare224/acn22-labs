@@ -1,9 +1,9 @@
+from lib import config
+from p4app import P4Mininet
 from os import environ
 from pathlib import PurePath
 from mininet.cli import CLI
 from mininet.topo import Topo
-from lib import config
-from p4app import P4Mininet
 from config import NUM_WORKERS
 
 
