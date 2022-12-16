@@ -13,6 +13,7 @@ control Aggregate(in elem_t elem_in,
 
   register<bit<32>>(32) elem_sum_reg;
   //TODO: may be move the current_elem_in to inout, so it access by next stage
+  
   action broadcast() {
     standard_metadata.mcast_grp = 1;
   }
@@ -20,25 +21,35 @@ control Aggregate(in elem_t elem_in,
     bit<32> elem_tmp = 0;
 
     /* read the data from register */
-    elem_sum_reg.read(elem_tmp, meta.curr_elem_idx);
+    elem_sum_reg.read(elem_tmp, meta.elem_idx);
     /* aggregate current value and register value */
     elem_tmp = elem_tmp + elem_in;
-    /* write new value to header (Should only be write if all worker do it, should remove this part ) */
+    /* update new value to header (not nessesary if it is not last worker) */
     elem_out = elem_tmp;
-
     if (meta.all_worker_arrive) {
       /* clean register to zero if it is last arrived worker */
       elem_tmp = 0;
+      /* and then broadcast the modified packet to all worker */
       broadcast();
     }
     /* write new value to register */
-    elem_sum_reg.write(meta.curr_elem_idx, elem_tmp);
+    elem_sum_reg.write(meta.elem_idx, elem_tmp);
 
     /* plus 1 before go to next stage */
-    meta.curr_elem_idx = meta.curr_elem_idx + 1;
+    meta.elem_idx = meta.elem_idx + 1;
   }
+  table tbl_aggr {
+    actions = {
+      aggr();
+    }
+    default_action = aggr();
+  }
+
   apply {
-    aggr();
+    @atomic {
+      // aggr();
+      tbl_aggr.apply();
+    }
   }
 }
 
