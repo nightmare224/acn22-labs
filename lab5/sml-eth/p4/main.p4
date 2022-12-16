@@ -60,7 +60,7 @@ control TheIngress(inout headers hdr,
   }
 
   action sml_md_set() {
-    meta.curr_elem_idx = 0;
+    meta.elem_idx = 0;
     worker_arrive();
   }
 
