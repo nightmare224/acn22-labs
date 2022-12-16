@@ -1,10 +1,10 @@
-from scapy.all import get_if_addr
 from scapy.all import get_if_hwaddr
 from scapy.all import Packet
+from scapy.config import conf
 from scapy.fields import ByteField
-from scapy.layers.l2 import Ether
 from scapy.layers.inet import IP
 from scapy.layers.inet import UDP
+from scapy.layers.l2 import Ether
 from scapy.packet import Raw
 from socket import SOCK_DGRAM
 from socket import socket
@@ -13,6 +13,7 @@ from lib.gen import GenMultipleOfInRange
 from lib.test import CreateTestData
 from lib.test import RunIntTest
 from lib.worker import GetRankOrExit
+from lib.worker import ip
 from lib.worker import Log
 from config import NUM_WORKERS
 
@@ -20,8 +21,13 @@ NUM_ITER = 1     # TODO: Make sure your program can handle larger values
 CHUNK_SIZE = 3  # TODO: Define me
 SRC_MAC_ADDR = get_if_hwaddr("eth0")
 DST_MAC_ADDR = "ff:ff:ff:ff:ff:ff"
-SRC_IP_ADDR = get_if_addr("eth0")
-DST_IP_ADDR = "255.255.255.255"
+SRC_IP_ADDR = ip()
+DST_IP_ADDR = ""
+for route in conf.route.routes:
+    if SRC_IP_ADDR in route:
+        DST_IP_ADDR = route[2]
+        break
+print(conf.route)
 SRC_PORT = 38787
 DST_PORT = 38788
 ETH_TYPE = 0x0800
@@ -66,8 +72,9 @@ def AllReduce(soc, rank, data, result):
             SwitchML(rank=rank, num_workers=NUM_WORKERS) /
             Raw(payload)
         ).build()
-        print(Ether(pkt_snd).display())
+        # print(Ether(pkt_snd).display())
         soc.sendto(pkt_snd, (DST_IP_ADDR, DST_PORT))
+        tmp = soc.recvfrom(1024)
     # NOTE: Do not send/recv directly to/from the socket.
     #       Instead, please use the functions send() and receive() from lib/comm.py
     #       We will use modified versions of these functions to test your program
@@ -78,6 +85,7 @@ def main():
     rank = GetRankOrExit()
 
     s = socket(type=SOCK_DGRAM)
+    # s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
     # NOTE: This socket will be used for all AllReduce calls.
     #       Feel free to go with a different design (e.g. multiple sockets)
     #       if you want to, but make sure the loop below still works
