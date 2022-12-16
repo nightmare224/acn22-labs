@@ -17,9 +17,13 @@ from lib.worker import Log
 from config import NUM_WORKERS
 
 NUM_ITER = 1     # TODO: Make sure your program can handle larger values
-CHUNK_SIZE = 2  # TODO: Define me
-MAC_ADDR = get_if_hwaddr("eth0")
-IP_ADDR = get_if_addr("eth0")
+CHUNK_SIZE = 3  # TODO: Define me
+SRC_MAC_ADDR = get_if_hwaddr("eth0")
+DST_MAC_ADDR = "ff:ff:ff:ff:ff:ff"
+SRC_IP_ADDR = get_if_addr("eth0")
+DST_IP_ADDR = "255.255.255.255"
+SRC_PORT = 38787
+DST_PORT = 38788
 ETH_TYPE = 0x0800
 IP_HEADER_LEN = 20
 UDP_HEADER_LEN = 8
@@ -52,16 +56,18 @@ def AllReduce(soc, rank, data, result):
     # for i in range(len(data) // CHUNK_SIZE):
     for i in range(2):
         payload = bytearray()
-        for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
+        # for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
+        for num in [1, 1, 1]:
             payload.extend(num.to_bytes(length=4, byteorder="big"))
         pkt_snd = (
-            Ether(src=MAC_ADDR, type=ETH_TYPE) /
-            IP(IP(ihl=5, len=IP_TOTAL_LEN, id=i, proto=IP_PROTO, src=IP_ADDR, dst="255.255.255.255") /
-               UDP(sport=38787, dport=38788, len=UDP_TOTAL_LEN)) /
+            Ether(dst=DST_MAC_ADDR, src=SRC_MAC_ADDR, type=ETH_TYPE) /
+            IP(ihl=5, len=IP_TOTAL_LEN, id=i, proto=IP_PROTO, src=SRC_IP_ADDR, dst=DST_IP_ADDR) /
+            UDP(sport=SRC_PORT, dport=DST_PORT, len=UDP_TOTAL_LEN) /
             SwitchML(rank=rank, num_workers=NUM_WORKERS) /
             Raw(payload)
-        )
-        print(pkt_snd.display())
+        ).build()
+        print(Ether(pkt_snd).display())
+        soc.sendto(pkt_snd, (DST_IP_ADDR, DST_PORT))
     # NOTE: Do not send/recv directly to/from the socket.
     #       Instead, please use the functions send() and receive() from lib/comm.py
     #       We will use modified versions of these functions to test your program
