@@ -40,8 +40,8 @@ header ipv4_h {
 }
 
 header udp_h {
-  bit<16> srcPort;
-  bit<16> dstPort;
+  udp_port_t srcPort;
+  udp_port_t dstPort;
   bit<16> length;
   bit<16> checksum;
 }
@@ -92,8 +92,8 @@ struct headers {
   arp_ipv4_h arp_ipv4;
   ipv4_h ipv4;
   udp_h udp;
-  // sml_h sml;
-  // elem_h vector;
+  sml_h sml;
+  elem_h vector;
 }
 
 struct metadata { 
