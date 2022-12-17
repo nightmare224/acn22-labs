@@ -47,7 +47,7 @@ for route in conf.route.routes:
         break
 
 SRC_PORT = 38787
-DST_PORT = 38788
+DST_PORT = 38787
 
 IP_HEADER_LEN = 20
 UDP_HEADER_LEN = 8
@@ -94,6 +94,7 @@ def AllReduce(soc, rank, data, result):
         for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
             # for num in [1, 2, 3]:
             payload.extend(pack("!I", num))
+        print(len(payload))
         pkt_snd = (
             Ether(dst=DST_MAC_ADDR, src=SRC_MAC_ADDR, type=ETH_P_IP) /
             IP(ihl=5, len=IP_TOTAL_LEN, id=i, proto=IP_PROTOS.udp, src=SRC_IP_ADDR, dst=DST_IP_ADDR) /
@@ -102,11 +103,11 @@ def AllReduce(soc, rank, data, result):
             Raw(payload)
         ).build()
         send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT))
-        pkt_recv = receive(soc, len(pkt_snd))
-        byte_data = SwitchML(
-            UDP(IP(Ether(pkt_recv).payload).payload).payload).payload.load
-        for j, num in enumerate(iter_unpack("!I", byte_data)):
-            result[i * CHUNK_SIZE + j] = num[0]
+        # pkt_recv = receive(soc, len(pkt_snd))
+        # byte_data = SwitchML(
+        #     UDP(IP(Ether(pkt_recv).payload).payload).payload).payload.load
+        # for j, num in enumerate(iter_unpack("!I", byte_data)):
+        #     result[i * CHUNK_SIZE + j] = num[0]
 
 
 def main():
