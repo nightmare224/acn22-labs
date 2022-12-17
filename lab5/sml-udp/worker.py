@@ -4,7 +4,7 @@ from scapy.all import Packet
 from scapy.config import conf
 # from scapy.data import ETH_P_ARP
 # from scapy.data import ETH_P_IP
-from scapy.data import ETHER_BROADCAST
+# from scapy.data import ETHER_BROADCAST
 # from scapy.data import IP_PROTOS
 from scapy.fields import ByteField
 # from scapy.layers.inet import IP
@@ -14,7 +14,7 @@ from scapy.fields import ByteField
 from scapy.packet import Raw
 from socket import AF_INET
 # from socket import AF_PACKET
-from socket import htons
+# from socket import htons
 from socket import inet_ntop
 from socket import SOCK_DGRAM
 # from socket import SOCK_RAW
@@ -34,7 +34,7 @@ from config import NUM_WORKERS
 
 NUM_ITER = 1     # TODO: Make sure your program can handle larger values
 CHUNK_SIZE = 3  # TODO: Define me
-BROADCAST_MAC_ADDR = hexlify(ETHER_BROADCAST, ":").decode()
+# BROADCAST_MAC_ADDR = hexlify(ETHER_BROADCAST, ":").decode()
 
 # SRC_MAC_ADDR = get_if_hwaddr("eth0")
 # DST_MAC_ADDR = BROADCAST_MAC_ADDR
