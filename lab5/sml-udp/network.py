@@ -60,14 +60,17 @@ def RunControlPlane(net):
     """
 
     port_to_host = {}
+    port_to_ip = {}
     for link in net.links:
         switch = link.intf1
         host = link.intf2
-        port_to_host[switch.node.ports[switch]] = host.node
+        port_no = switch.node.ports[switch]
+        port_to_host[port_no] = host.node
         rsp = host.node.cmd('route -n')
         gw = rsp.split("\n")[2].split(' ')[0]
-        switch.setIP(f"{gw}/24")
-        switch.updateIP()
+        port_to_ip[port_no] = gw
+        # switch.setIP(f"{gw}/24")
+        # switch.updateIP()
 
     switch = net.switches[0]
     ports = []
@@ -88,7 +91,7 @@ def RunControlPlane(net):
                 match_fields={"standard_metadata.egress_port": port_no},
                 action_name="TheEgress.sml_udp_send",
                 action_params={
-                    "ip_sw": ip2int(intf.IP()),
+                    "ip_sw": ip2int(port_to_ip[port_no]),
                     "ip_hst": ip2int(port_to_host[port_no].IP()),
                     "mac_sw": mac2int(intf.MAC()),
                     "mac_hst": mac2int(port_to_host[port_no].MAC()),
