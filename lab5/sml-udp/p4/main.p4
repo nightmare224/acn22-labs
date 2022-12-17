@@ -175,6 +175,8 @@ control TheEgress(inout headers hdr,
     // hdr.ipv4.dstAddr = ipv4_addr_tmp;
     hdr.ipv4.srcAddr = ip_sw;
     hdr.ipv4.dstAddr = ip_hst;
+    hdr.eth.srcAddr = mac_sw;
+    hdr.eth.dstAddr = mac_hst;
   }
   table sml_udp {
     actions = {
@@ -189,6 +191,9 @@ control TheEgress(inout headers hdr,
   }
   apply {
     /* TODO: Implement me (if needed) */
+    if(hdr.udp.isValid() && meta.all_worker_arrive ){
+      sml_udp.apply();
+    }
   }
 }
 
