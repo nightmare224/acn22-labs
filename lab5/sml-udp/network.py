@@ -16,7 +16,7 @@ class SMLTopo(Topo):
     def build(self):
         switch = self.addSwitch("s1")
         for i in range(NUM_WORKERS):
-            host = self.addHost(f"w{i}", mac=f"08:00:00:00:0{i+1}:11", ip=f"10.0.0.{i+1}/24", defaultRoute = "via 10.0.0.0")
+            host = self.addHost(f"w{i}", mac=f"08:00:00:00:0{i+1}:11", ip=f"10.0.{i+1}.1/24", defaultRoute = f"via 10.0.{i+1}.0")
             self.addLink(switch, host)
 
 
@@ -43,11 +43,18 @@ def RunControlPlane(net):
     """
     One-time control plane configuration
     """
-    # TODO: Implement me (if needed)
     switch = net.switches[0]
-    ports = [value
-             for key, value in switch.ports.items()
-             if key.name.startswith(switch.name)]
+    ports = []
+    for key, value in switch.ports.items():
+        if key.name.startswith(switch.name):
+            ports.append(value)
+            print(key.mac, key.ip)
+            switch.insertTableEntry(
+                table_name="TheIngress.arp.tbl_arp",
+                match_fields={"standard_metadata.ingress_port": value},
+                action_name="TheIngress.arp.arp_reply",
+                action_params={"sw_mac_addr": int(key.mac.replace(':', ''), 16)}
+            )
     switch.addMulticastGroup(mgid=1, ports=ports)
 
 topo = SMLTopo()  # TODO: Create an SMLTopo instance

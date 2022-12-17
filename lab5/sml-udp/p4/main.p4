@@ -51,11 +51,7 @@ parser TheParser(packet_in packet,
   //   transition accept;
   // }
 }
-
-control TheIngress(inout headers hdr,
-                   inout metadata meta,
-                   inout standard_metadata_t standard_metadata) {
-  
+control ARP(inout headers hdr, inout standard_metadata_t standard_metadata) {
   action arp_reply(mac_addr_t sw_mac_addr){
     ipv4_addr_t ipv4_addr_tmp;
     /* 1 is request, 2 is reply */
@@ -70,21 +66,32 @@ control TheIngress(inout headers hdr,
     //is egress_port is read only?
     standard_metadata.egress_spec = standard_metadata.ingress_port;
   }
-  table arp{
+  table tbl_arp {
     key = {
-      hdr.arp.oper: exact;
+      standard_metadata.ingress_port: exact;
     }
     actions = {
-      arp_reply();
-      NoAction();
+      arp_reply;
+      NoAction;
     }
-    // default_action = NoAction();
-    default_action = arp_reply(0x080000000100);
-    size = 2;
+    size = 8;
+    default_action = NoAction();
+    // default_action = arp_reply(0x080000000100);
+    /* at most 8 worker */
     // const entries = {
-    //   (0xffffffffffff): arp_reply(0x080000000100);
+    //   (2): arp_reply(hdr.);
     // }
+    /* at most 8 worker */
   }
+  apply {
+    tbl_arp.apply();
+  }
+}
+control TheIngress(inout headers hdr,
+                   inout metadata meta,
+                   inout standard_metadata_t standard_metadata) {
+  
+  ARP() arp;
   // action worker_arrive() {
   //   /* record the work have count */
   //   bit<8> worker_arrive_tmp;
@@ -153,7 +160,7 @@ control TheIngress(inout headers hdr,
   // Aggregate() elem31_ctrl;
   apply {
     if(hdr.arp.isValid()){
-      arp.apply();
+      arp.apply(hdr, standard_metadata);
     }
   //   if (hdr.eth.etherType == sml_eth_type) {
   //     sml_ctrl.apply();
