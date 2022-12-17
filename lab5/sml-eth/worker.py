@@ -8,6 +8,7 @@ from scapy.layers.l2 import Ether
 # from scapy.layers.l2 import SourceMACField
 from scapy.packet import Raw
 from scapy.sendrecv import srp
+from struct import pack
 from lib.gen import GenInts
 from lib.gen import GenMultipleOfInRange
 from lib.test import CreateTestData
@@ -53,7 +54,7 @@ def AllReduce(iface, rank, data, result):
         payload = bytearray()
         for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
         # for num in [1, 1, 1]:
-            payload.extend(num.to_bytes(length=4, byteorder="big"))
+            payload.extend(pack("!I", num))
 
         pkt_snd = (
             Ether(src=MAC_ADDR, type=ETH_TYPE) /
