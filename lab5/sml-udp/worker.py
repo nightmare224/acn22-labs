@@ -113,6 +113,7 @@ def main():
     rank = GetRankOrExit()
 
     s = socket(family=AF_INET, type=SOCK_DGRAM)
+    s.bind((SRC_IP_ADDR, SRC_PORT))
     # NOTE: This socket will be used for all AllReduce calls.
     #       Feel free to go with a different design (e.g. multiple sockets)
     #       if you want to, but make sure the loop below still works
