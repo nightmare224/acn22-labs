@@ -77,11 +77,11 @@ def AllReduce(soc, rank, data, result):
     """
     global DST_MAC_ADDR
     if DST_MAC_ADDR == BROADCAST_MAC_ADDR:
-        pkt_snd = (
+        pkt_snd = bytes(
             Ether(dst=DST_MAC_ADDR, src=SRC_MAC_ADDR, type=ETH_P_ARP) /
             ARP(hwtype=1, ptype=0x0800, hwlen=6, plen=4, op=1,
                 hwsrc=SRC_MAC_ADDR, psrc=SRC_IP_ADDR, pdst=DST_IP_ADDR)
-        ).build()
+        )
         s = socket(family=AF_PACKET, type=SOCK_RAW, proto=htons(ETH_P_ARP))
         s.bind(("eth0", ETH_P_ARP))
         s.send(pkt_snd)
@@ -89,18 +89,18 @@ def AllReduce(soc, rank, data, result):
         s.close()
 
     for i in range(len(data) // CHUNK_SIZE):
-        # for i in range(2):
+    # for i in range(2):
         payload = bytearray()
         for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
-            # for num in [1, 2, 3]:
+        # for num in [1, 2, 3]:
             payload.extend(pack("!I", num))
-        pkt_snd = (
+        pkt_snd = bytes(
             Ether(dst=DST_MAC_ADDR, src=SRC_MAC_ADDR, type=ETH_P_IP) /
-            IP(ihl=5, len=IP_TOTAL_LEN, id=i, proto=IP_PROTOS.udp, src=SRC_IP_ADDR, dst=DST_IP_ADDR) /
+            IP(version=4, ihl=5, len=IP_TOTAL_LEN, id=i, proto=IP_PROTOS.udp, src=SRC_IP_ADDR, dst=DST_IP_ADDR) /
             UDP(sport=SRC_PORT, dport=DST_PORT, len=UDP_TOTAL_LEN) /
             SwitchML(rank=rank, num_workers=NUM_WORKERS) /
             Raw(payload)
-        ).build()
+        )
         send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT))
         pkt_recv = receive(soc, len(pkt_snd))
         byte_data = SwitchML(
