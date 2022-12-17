@@ -9,6 +9,7 @@ from scapy.layers.l2 import Ether
 from scapy.packet import Raw
 from scapy.sendrecv import srp
 from struct import pack
+from struct import iter_unpack
 from lib.gen import GenInts
 from lib.gen import GenMultipleOfInRange
 from lib.test import CreateTestData
@@ -63,9 +64,9 @@ def AllReduce(iface, rank, data, result):
         )
         # print(packet_send[SwitchML].display())
         pkt_rcv, _ = srp(x=pkt_snd, iface=iface)
-        for j in range(CHUNK_SIZE):
-            result[i * CHUNK_SIZE + j] = int.from_bytes(
-                SwitchML(pkt_rcv.res[0][1].payload).payload.load[j * 4: (j + 1) * 4], "big")
+        byte_data = SwitchML(pkt_rcv.res[0][1].payload).payload.load
+        for j, num in enumerate(iter_unpack("!I", byte_data)):
+            result[i * CHUNK_SIZE + j] = num[0]
 
 
 def main():
