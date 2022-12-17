@@ -177,6 +177,8 @@ control TheEgress(inout headers hdr,
     hdr.ipv4.dstAddr = ip_hst;
     hdr.eth.srcAddr = mac_sw;
     hdr.eth.dstAddr = mac_hst;
+    /* should count real checksum, just testing */
+    hdr.udp.checksum = 0;
   }
   table sml_udp {
     actions = {
@@ -208,21 +210,31 @@ control TheChecksumComputation(inout headers  hdr, inout metadata meta) {
     update_checksum(
       hdr.ipv4.isValid(),
       { 
-          hdr.ipv4.version,
-          hdr.ipv4.ihl,
-          hdr.ipv4.typeOfService,
-          hdr.ipv4.totalLength,
-          hdr.ipv4.identification,
-          hdr.ipv4.flags,
-          hdr.ipv4.fragmentOffset,
-          hdr.ipv4.ttl,
-          hdr.ipv4.protocol,
-          hdr.ipv4.srcAddr,
-          hdr.ipv4.dstAddr
+        hdr.ipv4.version,
+        hdr.ipv4.ihl,
+        hdr.ipv4.typeOfService,
+        hdr.ipv4.totalLength,
+        hdr.ipv4.identification,
+        hdr.ipv4.flags,
+        hdr.ipv4.fragmentOffset,
+        hdr.ipv4.ttl,
+        hdr.ipv4.protocol,
+        hdr.ipv4.srcAddr,
+        hdr.ipv4.dstAddr
       },
       hdr.ipv4.hdrChecksum,
       HashAlgorithm.csum16
     );
+    // update_checksum(
+    //   hdr.udp.isValid(),
+    //   { 
+    //     hdr.udp.srcPort,
+    //     hdr.udp.dstPort,
+    //     hdr.udp.length
+    //   },
+    //   hdr.udp.checksum,
+    //   HashAlgorithm.csum16
+    // );
   }
 }
 
