@@ -88,11 +88,11 @@ def AllReduce(soc, rank, data, result):
     #     DST_MAC_ADDR = ARP(Ether(s.recv(len(pkt_snd))).payload).hwsrc
     #     s.close()
 
-    # for i in range(len(data) // CHUNK_SIZE):
-    for i in range(2):
+    for i in range(len(data) // CHUNK_SIZE):
+    # for i in range(2):
         payload = bytearray()
-        # for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
-        for num in [1] * CHUNK_SIZE:
+        for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
+        # for num in [1] * CHUNK_SIZE:
             payload.extend(pack("!I", num))
         pkt_snd = bytes(
             # Ether(dst=DST_MAC_ADDR, src=SRC_MAC_ADDR, type=ETH_P_IP) /
@@ -102,9 +102,11 @@ def AllReduce(soc, rank, data, result):
             Raw(payload)
         )
         send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT))
+        print("send!")
         pkt_recv, _ = receive(soc, len(pkt_snd))
         # byte_data = SwitchML(UDP(IP(Ether(pkt_recv).payload).payload).payload).payload.load
         byte_data = SwitchML(pkt_recv).payload.load
+        print("recv!")
         for j, num in enumerate(iter_unpack("!I", byte_data)):
             result[i * CHUNK_SIZE + j] = num[0]
 
