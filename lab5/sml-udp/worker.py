@@ -33,7 +33,7 @@ from lib.worker import Log
 from config import NUM_WORKERS
 
 NUM_ITER = 1     # TODO: Make sure your program can handle larger values
-CHUNK_SIZE = 3  # TODO: Define me
+CHUNK_SIZE = 32  # TODO: Define me
 # BROADCAST_MAC_ADDR = hexlify(ETHER_BROADCAST, ":").decode()
 
 # SRC_MAC_ADDR = get_if_hwaddr("eth0")
@@ -102,7 +102,7 @@ def AllReduce(soc, rank, data, result):
             Raw(payload)
         )
         send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT))
-        pkt_recv = receive(soc, len(pkt_snd))
+        pkt_recv, _ = receive(soc, len(pkt_snd))
         # byte_data = SwitchML(UDP(IP(Ether(pkt_recv).payload).payload).payload).payload.load
         byte_data = SwitchML(pkt_recv).payload.load
         for j, num in enumerate(iter_unpack("!I", byte_data)):
