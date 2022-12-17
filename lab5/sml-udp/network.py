@@ -43,8 +43,18 @@ def RunControlPlane(net):
     """
     One-time control plane configuration
     """
-    switch = net.switches[0]
-    print(net.links)
+    
+    # print(net.links[0].intf1.MAC())
+    # for link in net.links:
+    #     switch = link.intf1
+    #     host = link.intf2
+    #     print(switch.node)
+        # switch.insertTableEntry(
+        #     table_name="TheEgress.sml_udp",
+        #     match_fields={"standard_metadata.egress_port": value},
+        #     action_name="TheIngress.arp.arp_reply",
+        #     action_params={"sw_mac_addr": int(key.mac.replace(':', ''), 16)}
+        # )
     # for h, s in zip(net.hosts, list(switch.ports.items())):
     #     switch.insertTableEntry(
     #         table_name="TheEgress.sml_udp",
@@ -54,6 +64,7 @@ def RunControlPlane(net):
     #     )
     #     print(h, s)
 
+    switch = net.switches[0]
     ports = []
     for key, value in switch.ports.items():
         if key.name.startswith(switch.name):
