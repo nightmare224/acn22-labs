@@ -16,7 +16,7 @@ class SMLTopo(Topo):
     def build(self):
         switch = self.addSwitch("s1")
         for i in range(NUM_WORKERS):
-            host = self.addHost(f"w{i}", ip=f"10.0.0.{i+1}/24", defaultRoute = "via 10.0.0.0")
+            host = self.addHost(f"w{i}", mac=f"08:00:00:00:0{i+1}:11", ip=f"10.0.0.{i+1}/24", defaultRoute = "via 10.0.0.0")
             self.addLink(switch, host)
 
 
