@@ -102,11 +102,9 @@ def AllReduce(soc, rank, data, result):
             Raw(payload)
         )
         send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT))
-        print("send!")
         pkt_recv, _ = receive(soc, len(pkt_snd))
         # byte_data = SwitchML(UDP(IP(Ether(pkt_recv).payload).payload).payload).payload.load
         byte_data = SwitchML(pkt_recv).payload.load
-        print("recv!")
         for j, num in enumerate(iter_unpack("!I", byte_data)):
             result[i * CHUNK_SIZE + j] = num[0]
 
