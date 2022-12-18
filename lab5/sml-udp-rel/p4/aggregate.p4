@@ -55,7 +55,7 @@ control Aggregate(in elem_t elem_in,
         // elem_tmp = 0;
       }
     }else if(meta.opcode == 1){
-      unicast();
+      // unicast();
     }
     /* write new value to register */
     elem_sum_reg.write(meta.elem_idx + (bit<32>)elem_base_idx, elem_tmp);

@@ -63,7 +63,10 @@ control TheIngress(inout headers hdr,
                    inout standard_metadata_t standard_metadata) {
   /* worker arrive or not */
   register<bit<16>>(1) worker_arrive_reg;
-  // register<bit<32>>(1) debug_reg;
+  register<bit<32>>(1) debug_reg;
+  register<bit<32>>(1) debug_reg2;
+  register<bit<32>>(1) debug_reg3;
+  register<bit<32>>(1) debug_reg4;
   // bit<32> debug_tmp;
   action worker_arrive() {
     /* record the work have count */
@@ -97,11 +100,14 @@ control TheIngress(inout headers hdr,
       meta.opcode = 0;
       worker_arrive_tmp = worker_arrive_tmp | ((bit<8>)1 << hdr.sml.rank);
     }
-
+    // debug_reg.write(0, (bit<32>)worker_arrive_prev);
+    // debug_reg2.write(0, (bit<32>)worker_arrive_tmp);
     /* clean the register only if other chunk also arrive */
     if((worker_arrive_tmp & worker_arrive_prev) == 0xff){
-      worker_arrive_prev = 0x00;
+      worker_arrive_prev = mask;
     }
+    // debug_reg3.write(0, (bit<32>)worker_arrive_prev);
+    // debug_reg4.write(0, (bit<32>)mask);
     if(hdr.sml.chunk_id == 0){
       worker_arrive_all = worker_arrive_prev ++ worker_arrive_tmp;
     }else{
@@ -192,45 +198,44 @@ control TheIngress(inout headers hdr,
       arp.apply(hdr, standard_metadata);
     }
     if (hdr.sml.isValid()) {
-      sml_ctrl.apply();
+      @atomic{
+        sml_ctrl.apply();
+      }
       sml_gateway.apply();
-      // bit<32> elem_base_idx = 0;
-      // /* odd number */
-      // if(hdr.chunk_id & (bit<32>)0x1) {
-      //   elem_base_idx = chunk_size;
-      // }
-      elem00_ctrl.apply(hdr.vector.elem00, hdr.vector.elem00, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem01_ctrl.apply(hdr.vector.elem01, hdr.vector.elem01, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem02_ctrl.apply(hdr.vector.elem02, hdr.vector.elem02, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem03_ctrl.apply(hdr.vector.elem03, hdr.vector.elem03, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem04_ctrl.apply(hdr.vector.elem04, hdr.vector.elem04, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem05_ctrl.apply(hdr.vector.elem05, hdr.vector.elem05, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem06_ctrl.apply(hdr.vector.elem06, hdr.vector.elem06, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem07_ctrl.apply(hdr.vector.elem07, hdr.vector.elem07, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem08_ctrl.apply(hdr.vector.elem08, hdr.vector.elem08, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem09_ctrl.apply(hdr.vector.elem09, hdr.vector.elem09, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem10_ctrl.apply(hdr.vector.elem10, hdr.vector.elem10, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem11_ctrl.apply(hdr.vector.elem11, hdr.vector.elem11, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem12_ctrl.apply(hdr.vector.elem12, hdr.vector.elem12, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem13_ctrl.apply(hdr.vector.elem13, hdr.vector.elem13, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem14_ctrl.apply(hdr.vector.elem14, hdr.vector.elem14, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem15_ctrl.apply(hdr.vector.elem15, hdr.vector.elem15, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem16_ctrl.apply(hdr.vector.elem16, hdr.vector.elem16, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem17_ctrl.apply(hdr.vector.elem17, hdr.vector.elem17, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem18_ctrl.apply(hdr.vector.elem18, hdr.vector.elem18, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem19_ctrl.apply(hdr.vector.elem19, hdr.vector.elem19, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem20_ctrl.apply(hdr.vector.elem20, hdr.vector.elem20, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem21_ctrl.apply(hdr.vector.elem21, hdr.vector.elem21, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem22_ctrl.apply(hdr.vector.elem22, hdr.vector.elem22, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem23_ctrl.apply(hdr.vector.elem23, hdr.vector.elem23, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem24_ctrl.apply(hdr.vector.elem24, hdr.vector.elem24, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem25_ctrl.apply(hdr.vector.elem25, hdr.vector.elem25, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem26_ctrl.apply(hdr.vector.elem26, hdr.vector.elem26, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem27_ctrl.apply(hdr.vector.elem27, hdr.vector.elem27, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem28_ctrl.apply(hdr.vector.elem28, hdr.vector.elem28, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem29_ctrl.apply(hdr.vector.elem29, hdr.vector.elem29, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem30_ctrl.apply(hdr.vector.elem30, hdr.vector.elem30, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
-      elem31_ctrl.apply(hdr.vector.elem31, hdr.vector.elem31, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+      if(meta.opcode == 0 || meta.opcode == 1){
+        elem00_ctrl.apply(hdr.vector.elem00, hdr.vector.elem00, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem01_ctrl.apply(hdr.vector.elem01, hdr.vector.elem01, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem02_ctrl.apply(hdr.vector.elem02, hdr.vector.elem02, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem03_ctrl.apply(hdr.vector.elem03, hdr.vector.elem03, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem04_ctrl.apply(hdr.vector.elem04, hdr.vector.elem04, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem05_ctrl.apply(hdr.vector.elem05, hdr.vector.elem05, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem06_ctrl.apply(hdr.vector.elem06, hdr.vector.elem06, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem07_ctrl.apply(hdr.vector.elem07, hdr.vector.elem07, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem08_ctrl.apply(hdr.vector.elem08, hdr.vector.elem08, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem09_ctrl.apply(hdr.vector.elem09, hdr.vector.elem09, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem10_ctrl.apply(hdr.vector.elem10, hdr.vector.elem10, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem11_ctrl.apply(hdr.vector.elem11, hdr.vector.elem11, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem12_ctrl.apply(hdr.vector.elem12, hdr.vector.elem12, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem13_ctrl.apply(hdr.vector.elem13, hdr.vector.elem13, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem14_ctrl.apply(hdr.vector.elem14, hdr.vector.elem14, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem15_ctrl.apply(hdr.vector.elem15, hdr.vector.elem15, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem16_ctrl.apply(hdr.vector.elem16, hdr.vector.elem16, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem17_ctrl.apply(hdr.vector.elem17, hdr.vector.elem17, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem18_ctrl.apply(hdr.vector.elem18, hdr.vector.elem18, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem19_ctrl.apply(hdr.vector.elem19, hdr.vector.elem19, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem20_ctrl.apply(hdr.vector.elem20, hdr.vector.elem20, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem21_ctrl.apply(hdr.vector.elem21, hdr.vector.elem21, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem22_ctrl.apply(hdr.vector.elem22, hdr.vector.elem22, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem23_ctrl.apply(hdr.vector.elem23, hdr.vector.elem23, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem24_ctrl.apply(hdr.vector.elem24, hdr.vector.elem24, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem25_ctrl.apply(hdr.vector.elem25, hdr.vector.elem25, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem26_ctrl.apply(hdr.vector.elem26, hdr.vector.elem26, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem27_ctrl.apply(hdr.vector.elem27, hdr.vector.elem27, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem28_ctrl.apply(hdr.vector.elem28, hdr.vector.elem28, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem29_ctrl.apply(hdr.vector.elem29, hdr.vector.elem29, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem30_ctrl.apply(hdr.vector.elem30, hdr.vector.elem30, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);
+        elem31_ctrl.apply(hdr.vector.elem31, hdr.vector.elem31, hdr.sml.chunk_id, hdr.sml.rank, hdr.sml.num_workers, meta, standard_metadata);   
+      }
     }
   }
 }
