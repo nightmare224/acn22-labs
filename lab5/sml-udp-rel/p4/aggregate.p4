@@ -10,6 +10,7 @@ control Aggregate(in elem_t elem_in,
                   out elem_t elem_out,
                   in bit<8> chunk_id,
                   in bit<8> rank,
+                  in bit<8> num_workers,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
 
@@ -26,6 +27,7 @@ control Aggregate(in elem_t elem_in,
     bit<32> elem_tmp = 0;
     bit<8> elem_base_idx = 0;
     bit<8> worker_arrive_tmp = 0;
+    bit<8> mask = (bit<8>)0xff << num_workers;
     if(chunk_id == 1){
       elem_base_idx = chunk_size;
       worker_arrive_tmp = meta.worker_arrive[15:8];
@@ -36,8 +38,13 @@ control Aggregate(in elem_t elem_in,
     elem_out = elem_in;
     elem_sum_reg.read(elem_tmp, meta.elem_idx + (bit<32>)elem_base_idx);
     if(meta.opcode == 0){
-      /* aggregate current value and register value */
-      elem_tmp = elem_tmp + elem_in;
+      if ((worker_arrive_tmp ^ mask ^ ((bit<8>)1<<rank) ) == 0){
+        /* this is the first worker */
+        elem_tmp = elem_in;
+      }else{
+        /* aggregate current value and register value */
+        elem_tmp = elem_tmp + elem_in;
+      }
       // elem_tmp = elem_in;  // assign directly when it is the first worker
       /* update new value to header (not nessesary if it is not last worker) */
       elem_out = elem_tmp;
@@ -45,7 +52,7 @@ control Aggregate(in elem_t elem_in,
         /* and then broadcast the modified packet to all worker */
         broadcast();
         /* set the previous elem to 0 no current one */
-        elem_tmp = 0;
+        // elem_tmp = 0;
       }
     }else if(meta.opcode == 1){
       unicast();
