@@ -76,7 +76,7 @@ def AllReduce(soc, rank, data, result):
         # for num in [1] * CHUNK_SIZE:
             payload.extend(pack("!I", num))
         pkt_snd = bytes(
-            SwitchML(rank=rank, num_workers=NUM_WORKERS, chunk_id=i & 0x1) /
+            SwitchML(rank=rank, num_workers=NUM_WORKERS, chunk_id=i&0x1) /
             Raw(payload)
         )
         while 1:
@@ -86,7 +86,8 @@ def AllReduce(soc, rank, data, result):
             try:
                 # pkt_recv, _ = unreliable_receive(soc, len(pkt_snd), 0)
                 pkt_recv, _ = receive(soc, len(pkt_snd))
-                break
+                if SwitchML(pkt_snd).chunk_id == SwitchML(pkt_recv).chunk_id:
+                    break
             except timeout:
                 print(f"TIMEOUT {i}")
                 pass
