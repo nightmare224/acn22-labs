@@ -81,14 +81,14 @@ def main():
         # the data generate in local
         data_out = GenInts(num_elem)
         # Log(data_out)
-        Log(num_elem)
+        # Log(num_elem)
         # the result of data would receive after call the reduce
         data_in = GenInts(num_elem, 0)
         # test on data can ignore now
         CreateTestData(f"eth-iter-{i}", rank, data_out)
         # do all reduce and then get the result (data_out)
         AllReduce(iface, rank, data_out, data_in)
-        print(f"iter {i}: {data_in}")
+        # print(f"iter {i}: {data_in}")
         RunIntTest(f"eth-iter-{i}", rank, data_in, True)
     Log("Done")
 

@@ -64,23 +64,11 @@ control TheIngress(inout headers hdr,
     worker_arrive();
   }
 
-  // action drop() {
-  //   mark_to_drop(standard_metadata);
-  // }
-
   table sml_ctrl {
-    key = {
-      hdr.eth.etherType: exact;
-    }
     actions = {
       sml_md_set;
-      NoAction;
-      // drop;
     }
-    const entries = {
-      (sml_eth_type): sml_md_set();
-    }
-    default_action = NoAction;
+    default_action = sml_md_set();
   }
 
   Aggregate() elem00_ctrl;
@@ -116,7 +104,7 @@ control TheIngress(inout headers hdr,
   Aggregate() elem30_ctrl;
   Aggregate() elem31_ctrl;
   apply {
-    if (hdr.eth.etherType == sml_eth_type) {
+    if (hdr.sml.isValid()) {
       sml_ctrl.apply();
       elem00_ctrl.apply(hdr.vector.elem00, hdr.vector.elem00, meta, standard_metadata);
       elem01_ctrl.apply(hdr.vector.elem01, hdr.vector.elem01, meta, standard_metadata);

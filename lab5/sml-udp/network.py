@@ -25,7 +25,7 @@ class SMLTopo(Topo):
             )
             link = self.addLink(switch, host)
         # switch = self.switches()[0]
-        print(self.nodes())
+        # print(self.nodes())
 
 
 def RunWorkers(net):
@@ -87,7 +87,7 @@ def RunControlPlane(net):
             )
             # udp send table
             switch.insertTableEntry(
-                table_name="TheEgress.sml_udp",
+                table_name="TheEgress.tbl_sml_udp",
                 match_fields={"standard_metadata.egress_port": port_no},
                 action_name="TheEgress.sml_udp_send",
                 action_params={
@@ -98,7 +98,7 @@ def RunControlPlane(net):
                 },
             )
     switch.addMulticastGroup(mgid=1, ports=ports)
-    switch.printTableEntries()
+    # switch.printTableEntries()
 
 
 topo = SMLTopo()  # TODO: Create an SMLTopo instance

@@ -180,7 +180,7 @@ control TheEgress(inout headers hdr,
     /* should count real checksum, just testing */
     // hdr.udp.checksum = 0;
   }
-  table sml_udp {
+  table tbl_sml_udp {
     actions = {
       sml_udp_send();
       NoAction();
@@ -194,7 +194,7 @@ control TheEgress(inout headers hdr,
   apply {
     /* TODO: Implement me (if needed) */
     if(hdr.udp.isValid() && hdr.sml.isValid()){
-      sml_udp.apply();
+      tbl_sml_udp.apply();
     }
   }
 }

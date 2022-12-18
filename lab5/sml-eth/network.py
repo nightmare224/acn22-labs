@@ -15,7 +15,7 @@ class SMLTopo(Topo):
     def build(self):
         switch = self.addSwitch("s1")
         for i in range(NUM_WORKERS):
-            host = self.addHost(f"w{i}")
+            host = self.addHost(f"w{i}", mac=f"08:00:00:00:0{i+1}:11")
             self.addLink(switch, host)
 
 
