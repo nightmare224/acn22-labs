@@ -1,11 +1,11 @@
 from lib import config  # do not import anything before this
 from p4app import P4Mininet
+from ipaddress import IPv4Address
 from os import environ
 from pathlib import PurePath
 from mininet.cli import CLI
 from mininet.topo import Topo
 from config import NUM_WORKERS
-from ipaddress import IPv4Address
 
 
 class SMLTopo(Topo):

@@ -1,4 +1,5 @@
-from binascii import hexlify
+# from binascii import hexlify
+from ipaddress import IPv4Address
 # from scapy.all import get_if_hwaddr
 from scapy.all import Packet
 from scapy.config import conf
@@ -15,14 +16,13 @@ from scapy.packet import Raw
 from socket import AF_INET
 # from socket import AF_PACKET
 # from socket import htons
-from socket import inet_ntop
 from socket import SOCK_DGRAM
 # from socket import SOCK_RAW
 from socket import socket
 from struct import iter_unpack
 from struct import pack
-from lib.comm import send
 from lib.comm import receive
+from lib.comm import send
 from lib.gen import GenInts
 from lib.gen import GenMultipleOfInRange
 from lib.test import CreateTestData
@@ -43,7 +43,7 @@ SRC_IP_ADDR = ip()
 DST_IP_ADDR = ""
 for route in conf.route.routes:
     if SRC_IP_ADDR in route:
-        DST_IP_ADDR = inet_ntop(AF_INET, pack("!I", route[0]))
+        DST_IP_ADDR = str(IPv4Address(route[0]))
         break
 
 SRC_PORT = 38787
