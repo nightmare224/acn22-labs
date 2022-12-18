@@ -24,13 +24,11 @@ control Aggregate(in elem_t elem_in,
   }
   action aggr() {
     bit<32> elem_tmp = 0;
-    bit<32> elem_base_idx = chunk_size & chunk_id;
+    bit<8> elem_base_idx = chunk_size & chunk_id;
 
-    if(meta.opcode == 1){
-      unicast();
-    }else if(meta.opcode == 0){
-      /* read the data from register */
-      elem_sum_reg.read(elem_tmp, meta.elem_idx + elem_base_idx);
+    /* read the data from register */
+    elem_sum_reg.read(elem_tmp, meta.elem_idx + (bit<32>)elem_base_idx);
+    if(meta.opcode == 0){
       /* aggregate current value and register value */
       elem_tmp = elem_tmp + elem_in;
       /* update new value to header (not nessesary if it is not last worker) */
@@ -41,9 +39,11 @@ control Aggregate(in elem_t elem_in,
         /* and then broadcast the modified packet to all worker */
         broadcast();
       }
-      /* write new value to register */
-      elem_sum_reg.write(meta.elem_idx + elem_base_idx, elem_tmp);
+    }else if(meta.opcode == 1){
+      unicast();
     }
+    /* write new value to register */
+    elem_sum_reg.write(meta.elem_idx + (bit<32>)elem_base_idx, elem_tmp);
     /* plus 1 before go to next stage */
     meta.elem_idx = meta.elem_idx + 1;
   }

@@ -49,7 +49,7 @@ header udp_h {
 header sml_h {
   bit<8> rank;
   bit<8> num_workers;
-  bit<32> chunk_id;
+  bit<8> chunk_id;
 }
 
 header elem_h {
@@ -97,14 +97,15 @@ struct headers {
   elem_h vector;
 }
 
-struct worker_arrival_t {
+header worker_arrival_t {
   bool all_worker_arrive;
   bit<8> worker_arrive;
+  bit<7> padding;
 }
 
 struct metadata {
-  elem_idx_t elem_idx[2];
   worker_arrival_t[2] worker_arrival;
+  elem_idx_t elem_idx;
   bit<8> opcode;
   /* 
     0: normal aggregate

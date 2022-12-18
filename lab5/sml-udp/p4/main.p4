@@ -201,7 +201,7 @@ control TheEgress(inout headers hdr,
 
 control TheChecksumVerification(inout headers hdr, inout metadata meta) {
   apply {
-    /* TODO: Implement me (if needed) */
+    /* no need is this level, would need in level 3*/
   }
 }
 
@@ -226,7 +226,7 @@ control TheChecksumComputation(inout headers  hdr, inout metadata meta) {
       HashAlgorithm.csum16
     );
     update_checksum(
-      hdr.udp.isValid(),
+      hdr.sml.isValid(),
       { 
         hdr.ipv4.srcAddr,
         hdr.ipv4.dstAddr,

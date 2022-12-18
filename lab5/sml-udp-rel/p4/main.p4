@@ -68,9 +68,9 @@ control TheIngress(inout headers hdr,
     /* record the work have count */
     bit<8> worker_arrive_tmp;
     bit<8> mask = (bit<8>)0xff << hdr.sml.num_workers;
-    worker_arrive_reg.read(worker_arrive_tmp, hdr.sml.chunk_id);
+    worker_arrive_reg.read(worker_arrive_tmp, (bit<32>)hdr.sml.chunk_id);
     /* means this packet already arrive */
-    if (worker_arrive_tmp[hdr.sml.rank] == 1){
+    if ((worker_arrive_tmp & ((bit<8>)1 << hdr.sml.rank)) > 0){
       /* means only this worker didn't get result */
       if (meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive) {
         /* unicast the result to this worker */
@@ -83,10 +83,10 @@ control TheIngress(inout headers hdr,
     }else {
       /* go to aggregation */
       meta.opcode = 0;
-      worker_arrive_tmp[hdr.sml.rank] = 1;
+      worker_arrive_tmp = worker_arrive_tmp | ((bit<8>)1 << hdr.sml.rank);
     }
     meta.worker_arrival[hdr.sml.chunk_id].worker_arrive = worker_arrive_tmp;
-    if (worker_arrive_tmp | mask == 0xff) {
+    if ((worker_arrive_tmp | mask) == 0xff) {
       meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = true;
     } else {
       meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = false;
@@ -96,10 +96,10 @@ control TheIngress(inout headers hdr,
     if(meta.worker_arrival[~hdr.sml.chunk_id & 0x1].all_worker_arrive){
       worker_arrive_tmp = 0x00;
     }
-    worker_arrive_reg.write(hdr.sml.chunk_id, worker_arrive_tmp);
+    worker_arrive_reg.write((bit<32>)hdr.sml.chunk_id, worker_arrive_tmp);
   }
   action sml_md_set() {
-    meta.elem_idx[hdr.sml.chunk_id] = 0;
+    meta.elem_idx = 0;
     worker_arrive();
   }
   table sml_ctrl {
