@@ -104,7 +104,8 @@ header worker_arrival_t {
 }
 
 struct metadata {
-  worker_arrival_t[2] worker_arrival;
+  // worker_arrival_t[2] worker_arrival;
+  bit<16> worker_arrive;
   elem_idx_t elem_idx;
   bit<8> opcode;
   /* 

@@ -61,8 +61,8 @@ def AllReduce(soc, rank, data, result):
     for i in range(len(data) // CHUNK_SIZE):
     # for i in range(2):
         payload = bytearray()
-        # for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
-        for num in [1] * CHUNK_SIZE:
+        for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
+        # for num in [1] * CHUNK_SIZE:
             payload.extend(pack("!I", num))
         pkt_snd = bytes(
             SwitchML(rank=rank, num_workers=NUM_WORKERS, chunk_id=i&0x1) / 

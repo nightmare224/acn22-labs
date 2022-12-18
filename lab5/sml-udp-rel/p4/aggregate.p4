@@ -25,22 +25,26 @@ control Aggregate(in elem_t elem_in,
   action aggr() {
     bit<32> elem_tmp = 0;
     bit<8> elem_base_idx = 0;
+    bit<8> worker_arrive_tmp = 0;
     if(chunk_id == 1){
       elem_base_idx = chunk_size;
+      worker_arrive_tmp = meta.worker_arrive[15:8];
+    }else{
+      worker_arrive_tmp = meta.worker_arrive[7:0];
     }
     /* read the data from register */
+    elem_out = elem_in;
     elem_sum_reg.read(elem_tmp, meta.elem_idx + (bit<32>)elem_base_idx);
     if(meta.opcode == 0){
       /* aggregate current value and register value */
       elem_tmp = elem_tmp + elem_in;
+      // elem_tmp = elem_in;  // assign directly when it is the first worker
       /* update new value to header (not nessesary if it is not last worker) */
       elem_out = elem_tmp;
-      if (meta.worker_arrival[chunk_id].worker_arrive == 0xff) {
+      if (worker_arrive_tmp == 0xff) {
         /* and then broadcast the modified packet to all worker */
         broadcast();
-      }
-      if (met){
-        /* clean register to zero if last chunk all arrive */
+        /* set the previous elem to 0 no current one */
         elem_tmp = 0;
       }
     }else if(meta.opcode == 1){

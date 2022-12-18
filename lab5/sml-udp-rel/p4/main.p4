@@ -62,15 +62,25 @@ control TheIngress(inout headers hdr,
                    inout metadata meta,
                    inout standard_metadata_t standard_metadata) {
   /* worker arrive or not */
-  register<bit<8>>(2) worker_arrive_reg;
+  register<bit<16>>(1) worker_arrive_reg;
   // register<bit<32>>(1) debug_reg;
   // bit<32> debug_tmp;
   action worker_arrive() {
     /* record the work have count */
+    bit<16> worker_arrive_all;
     bit<8> worker_arrive_tmp;
+    bit<8> worker_arrive_prev;
     bit<8> mask = (bit<8>)0xff << hdr.sml.num_workers;
-    bit<32> chunk_id_tmp;
-    worker_arrive_reg.read(worker_arrive_tmp, (bit<32>)hdr.sml.chunk_id);
+    // bit<32> chunk_id_tmp;
+
+    worker_arrive_reg.read(worker_arrive_all, 0);
+    if(hdr.sml.chunk_id == 0){
+      worker_arrive_tmp = worker_arrive_all[7:0];
+      worker_arrive_prev = worker_arrive_all[15:8];
+    }else{
+      worker_arrive_tmp = worker_arrive_all[15:8];
+      worker_arrive_prev = worker_arrive_all[7:0];
+    }
     worker_arrive_tmp = worker_arrive_tmp | mask;
     /* means this packet already arrive */
     if ((worker_arrive_tmp & ((bit<8>)1 << hdr.sml.rank)) > 0){
@@ -88,14 +98,20 @@ control TheIngress(inout headers hdr,
       meta.opcode = 0;
       worker_arrive_tmp = worker_arrive_tmp | ((bit<8>)1 << hdr.sml.rank);
     }
-    /* store the arrive data to metadata */
-    meta.worker_arrival[hdr.sml.chunk_id].worker_arrive = worker_arrive_tmp;
+
     /* clean the register only if other chunk also arrive */
-    if(meta.worker_arrival[~hdr.sml.chunk_id & 0x1].worker_arrive == 0xff){
-      worker_arrive_tmp = 0x00;
+    if((worker_arrive_tmp & worker_arrive_prev) == 0xff){
+      worker_arrive_prev = 0x00;
+    }
+    if(hdr.sml.chunk_id == 0){
+      worker_arrive_all = worker_arrive_prev ++ worker_arrive_tmp;
+    }else{
+      worker_arrive_all = worker_arrive_tmp ++ worker_arrive_prev;
     }
     /* update the arrive data to register */
-    worker_arrive_reg.write((bit<32>)hdr.sml.chunk_id, worker_arrive_tmp);
+    worker_arrive_reg.write(0, worker_arrive_all);
+    /* store the arrive data to metadata */
+    meta.worker_arrive = worker_arrive_all;
 
     // if ((worker_arrive_tmp | mask) == (bit<8>)0xff) {
     //   meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = true;
