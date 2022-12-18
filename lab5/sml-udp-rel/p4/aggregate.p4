@@ -35,8 +35,9 @@ control Aggregate(in elem_t elem_in,
       worker_arrive_tmp = meta.worker_arrive[7:0];
     }
     /* read the data from register */
-    elem_out = elem_in;
+    // elem_out = elem_in;
     elem_sum_reg.read(elem_tmp, meta.elem_idx + (bit<32>)elem_base_idx);
+    elem_out = elem_tmp;
     if(meta.opcode == 0){
       if ((worker_arrive_tmp ^ mask ^ ((bit<8>)1<<rank) ) == 0){
         /* this is the first worker */
@@ -55,7 +56,7 @@ control Aggregate(in elem_t elem_in,
         // elem_tmp = 0;
       }
     }else if(meta.opcode == 1){
-      // unicast();
+      unicast();
     }
     /* write new value to register */
     elem_sum_reg.write(meta.elem_idx + (bit<32>)elem_base_idx, elem_tmp);
