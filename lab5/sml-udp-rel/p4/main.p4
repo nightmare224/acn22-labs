@@ -123,15 +123,23 @@ control TheIngress(inout headers hdr,
     meta.elem_idx = 0;
     worker_arrive();
   }
-  table sml_ctrl {
-    actions = {
-      sml_md_set;
-    }
-    default_action = sml_md_set();
-  }
   action drop() {
     mark_to_drop(standard_metadata);
   }
+  table sml_ctrl {
+    key = {
+      standard_metadata.checksum_error: exact;
+    }
+    actions = {
+      sml_md_set();
+      drop();
+    }
+    default_action = drop();
+    const entries = {
+      (0): sml_md_set();
+    }
+  }
+
   table sml_gateway {
     key = {
       meta.opcode: exact;
