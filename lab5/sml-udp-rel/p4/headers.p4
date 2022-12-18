@@ -98,9 +98,9 @@ struct headers {
 }
 
 header worker_arrival_t {
-  bool all_worker_arrive;
+  // bool all_worker_arrive;
   bit<8> worker_arrive;
-  bit<7> padding;
+  // bit<7> padding;
 }
 
 struct metadata {

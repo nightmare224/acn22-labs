@@ -88,6 +88,7 @@ def RunControlPlane(net):
                 },
             )
     switch.addMulticastGroup(mgid=1, ports=ports)
+    switch.printTableEntries()
 
 topo = SMLTopo() # TODO: Create an SMLTopo instance
 net = P4Mininet(program="p4/main.p4", topo=topo)

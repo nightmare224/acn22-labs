@@ -24,8 +24,10 @@ control Aggregate(in elem_t elem_in,
   }
   action aggr() {
     bit<32> elem_tmp = 0;
-    bit<8> elem_base_idx = chunk_size & chunk_id;
-
+    bit<8> elem_base_idx = 0;
+    if(chunk_id == 1){
+      elem_base_idx = chunk_size;
+    }
     /* read the data from register */
     elem_sum_reg.read(elem_tmp, meta.elem_idx + (bit<32>)elem_base_idx);
     if(meta.opcode == 0){
@@ -33,11 +35,13 @@ control Aggregate(in elem_t elem_in,
       elem_tmp = elem_tmp + elem_in;
       /* update new value to header (not nessesary if it is not last worker) */
       elem_out = elem_tmp;
-      if (meta.worker_arrival[chunk_id].all_worker_arrive) {
-        /* clean register to zero if it is last arrived worker */
-        elem_tmp = 0;
+      if (meta.worker_arrival[chunk_id].worker_arrive == 0xff) {
         /* and then broadcast the modified packet to all worker */
         broadcast();
+      }
+      if (met){
+        /* clean register to zero if last chunk all arrive */
+        elem_tmp = 0;
       }
     }else if(meta.opcode == 1){
       unicast();

@@ -58,8 +58,8 @@ def AllReduce(soc, rank, data, result):
     #
     #       You may use the functions unreliable_send() and unreliable_receive()
     #       to test how your solution handles dropped/delayed packets
-    # for i in range(len(data) // CHUNK_SIZE):
-    for i in range(2):
+    for i in range(len(data) // CHUNK_SIZE):
+    # for i in range(2):
         payload = bytearray()
         # for num in data[CHUNK_SIZE * i : CHUNK_SIZE * (i + 1)]:
         for num in [1] * CHUNK_SIZE:

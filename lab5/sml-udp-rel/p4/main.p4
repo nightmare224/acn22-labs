@@ -63,16 +63,19 @@ control TheIngress(inout headers hdr,
                    inout standard_metadata_t standard_metadata) {
   /* worker arrive or not */
   register<bit<8>>(2) worker_arrive_reg;
-
+  // register<bit<32>>(1) debug_reg;
+  // bit<32> debug_tmp;
   action worker_arrive() {
     /* record the work have count */
     bit<8> worker_arrive_tmp;
     bit<8> mask = (bit<8>)0xff << hdr.sml.num_workers;
+    bit<32> chunk_id_tmp;
     worker_arrive_reg.read(worker_arrive_tmp, (bit<32>)hdr.sml.chunk_id);
+    worker_arrive_tmp = worker_arrive_tmp | mask;
     /* means this packet already arrive */
     if ((worker_arrive_tmp & ((bit<8>)1 << hdr.sml.rank)) > 0){
       /* means only this worker didn't get result */
-      if (meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive) {
+      if (worker_arrive_tmp == 0xff) {
         /* unicast the result to this worker */
         meta.opcode = 1;
       }
@@ -85,18 +88,21 @@ control TheIngress(inout headers hdr,
       meta.opcode = 0;
       worker_arrive_tmp = worker_arrive_tmp | ((bit<8>)1 << hdr.sml.rank);
     }
+    /* store the arrive data to metadata */
     meta.worker_arrival[hdr.sml.chunk_id].worker_arrive = worker_arrive_tmp;
-    if ((worker_arrive_tmp | mask) == 0xff) {
-      meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = true;
-    } else {
-      meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = false;
-    }
-
     /* clean the register only if other chunk also arrive */
-    if(meta.worker_arrival[~hdr.sml.chunk_id & 0x1].all_worker_arrive){
+    if(meta.worker_arrival[~hdr.sml.chunk_id & 0x1].worker_arrive == 0xff){
       worker_arrive_tmp = 0x00;
     }
+    /* update the arrive data to register */
     worker_arrive_reg.write((bit<32>)hdr.sml.chunk_id, worker_arrive_tmp);
+
+    // if ((worker_arrive_tmp | mask) == (bit<8>)0xff) {
+    //   meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = true;
+    // } else {
+    //   meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = false;
+    // }
+
   }
   action sml_md_set() {
     meta.elem_idx = 0;
