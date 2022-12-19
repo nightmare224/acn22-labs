@@ -11,7 +11,6 @@ from config import NUM_WORKERS
 class SMLTopo(Topo):
     def __init__(self, **opts):
         Topo.__init__(self, **opts)
-        # TODO: Implement me. Feel free to modify the constructor signature
         # NOTE: Make sure worker names are consistent with RunWorkers() below
 
     def build(self):
@@ -73,7 +72,6 @@ def RunControlPlane(net):
     for intf, port_no in switch.ports.items():
         if intf.name.startswith(switch.name):
             ports.append(port_no)
-            # print(key.mac, key.ip)
             # add arp reply table
             switch.insertTableEntry(
                 table_name="TheIngress.arp.tbl_arp",
@@ -94,7 +92,6 @@ def RunControlPlane(net):
                 },
             )
     switch.addMulticastGroup(mgid=1, ports=ports)
-    # switch.printTableEntries()
 
 
 topo = SMLTopo()

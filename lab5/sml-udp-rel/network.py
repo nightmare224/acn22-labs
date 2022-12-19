@@ -33,8 +33,10 @@ def RunWorkers(net):
     """
     def worker(rank):
         return f"w{rank}"
+
     def log_file(rank):
         return PurePath(environ['APP_LOGS']).joinpath(f"{worker(rank)}.log")
+
     for i in range(NUM_WORKERS):
         net.get(worker(i)).sendCmd(f'python worker.py {i} > {log_file(i)}')
     for i in range(NUM_WORKERS):
