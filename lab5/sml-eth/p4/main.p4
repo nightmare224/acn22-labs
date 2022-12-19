@@ -32,7 +32,7 @@ parser TheParser(packet_in packet,
 
 control TheChecksumVerification(inout headers hdr, inout metadata meta) {
   apply {
-    /* TODO: Implement me (if needed) */
+    /* no checksum in ethernet frame */
   }
 }
 
@@ -105,7 +105,9 @@ control TheIngress(inout headers hdr,
   Aggregate() elem31_ctrl;
   apply {
     if (hdr.sml.isValid()) {
-      sml_ctrl.apply();
+      @atomic{
+        sml_ctrl.apply();
+      }
       elem00_ctrl.apply(hdr.vector.elem00, hdr.vector.elem00, meta, standard_metadata);
       elem01_ctrl.apply(hdr.vector.elem01, hdr.vector.elem01, meta, standard_metadata);
       elem02_ctrl.apply(hdr.vector.elem02, hdr.vector.elem02, meta, standard_metadata);
@@ -152,15 +154,13 @@ control TheEgress(inout headers hdr,
 
 control TheChecksumComputation(inout headers  hdr, inout metadata meta) {
   apply {
-    /* TODO: Implement me (if needed) */
+    /* no checksum in ethernet frame */
   }
 }
 
 control TheDeparser(packet_out packet, in headers hdr) {
   apply {
-    packet.emit(hdr.eth);
-    packet.emit(hdr.sml);
-    packet.emit(hdr.vector);
+    packet.emit(hdr);
   }
 }
 

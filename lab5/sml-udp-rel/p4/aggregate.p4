@@ -15,8 +15,6 @@ control Aggregate(in elem_t elem_in,
                   inout standard_metadata_t standard_metadata) {
 
   register<bit<32>>(64) elem_sum_reg;
-  //TODO: may be move the current_elem_in to inout, so it access by next stage
-  
   action broadcast() {
     standard_metadata.mcast_grp = 1;
   }
@@ -35,7 +33,6 @@ control Aggregate(in elem_t elem_in,
       worker_arrive_tmp = meta.worker_arrive[7:0];
     }
     /* read the data from register */
-    // elem_out = elem_in;
     elem_sum_reg.read(elem_tmp, meta.elem_idx + (bit<32>)elem_base_idx);
     elem_out = elem_tmp;
     if(meta.opcode == 0){
@@ -46,14 +43,11 @@ control Aggregate(in elem_t elem_in,
         /* aggregate current value and register value */
         elem_tmp = elem_tmp + elem_in;
       }
-      // elem_tmp = elem_in;  // assign directly when it is the first worker
       /* update new value to header (not nessesary if it is not last worker) */
       elem_out = elem_tmp;
       if (worker_arrive_tmp == 0xff) {
         /* and then broadcast the modified packet to all worker */
         broadcast();
-        /* set the previous elem to 0 no current one */
-        // elem_tmp = 0;
       }
     }else if(meta.opcode == 1){
       unicast();

@@ -49,17 +49,9 @@ def RunControlPlane(net):
              for key, value in switch.ports.items()
              if key.name.startswith(switch.name)]
     switch.addMulticastGroup(mgid=1, ports=ports)
-    # switch.printTableEntries()
-    # print(switch.p4info_helper.p4info.tables[0].match_fields[0])
-    # print(switch.p4info_helper.p4info.tables[0].ListFields())
-    # switch.insertTableEntry(
-    #     table_name="TheIngress.sml_table",
-    #     match_fields={"hdr.eth.etherType": 0x8787},
-    #     action_name="TheIngress.sml_aggr",
-    # )
 
 
-topo = SMLTopo()  # TODO: Create an SMLTopo instance
+topo = SMLTopo()
 net = P4Mininet(program="p4/main.p4", topo=topo)
 net.run_control_plane = lambda: RunControlPlane(net)
 net.run_workers = lambda: RunWorkers(net)

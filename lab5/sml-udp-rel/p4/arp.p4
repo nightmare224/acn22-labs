@@ -31,12 +31,6 @@ control ARP(inout headers hdr, inout standard_metadata_t standard_metadata) {
     }
     size = 8;
     default_action = NoAction();
-    // default_action = arp_reply(0x080000000100);
-    /* at most 8 worker */
-    // const entries = {
-    //   (2): arp_reply(hdr.);
-    // }
-    /* at most 8 worker */
   }
   apply {
     tbl_arp.apply();

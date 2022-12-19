@@ -47,7 +47,6 @@ control Aggregate(in elem_t elem_in,
 
   apply {
     @atomic {
-      // aggr();
       tbl_aggr.apply();
     }
   }

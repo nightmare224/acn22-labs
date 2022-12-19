@@ -23,9 +23,7 @@ class SMLTopo(Topo):
                 ip=f"10.0.{i+1}.1/24",
                 defaultRoute=f"via 10.0.{i+1}.0",
             )
-            link = self.addLink(switch, host)
-        # switch = self.switches()[0]
-        # print(self.nodes())
+            self.addLink(switch, host)
 
 
 def RunWorkers(net):
@@ -69,8 +67,6 @@ def RunControlPlane(net):
         rsp = host.node.cmd('route -n')
         gw = rsp.split("\n")[2].split(' ')[0]
         port_to_ip[port_no] = gw
-        # switch.setIP(f"{gw}/24")
-        # switch.updateIP()
 
     switch = net.switches[0]
     ports = []
@@ -101,7 +97,7 @@ def RunControlPlane(net):
     # switch.printTableEntries()
 
 
-topo = SMLTopo()  # TODO: Create an SMLTopo instance
+topo = SMLTopo()
 net = P4Mininet(program="p4/main.p4", topo=topo)
 net.run_control_plane = lambda: RunControlPlane(net)
 net.run_workers = lambda: RunWorkers(net)

@@ -63,11 +63,6 @@ control TheIngress(inout headers hdr,
                    inout standard_metadata_t standard_metadata) {
   /* worker arrive or not */
   register<bit<16>>(1) worker_arrive_reg;
-  register<bit<32>>(1) debug_reg;
-  register<bit<32>>(1) debug_reg2;
-  register<bit<32>>(1) debug_reg3;
-  register<bit<32>>(1) debug_reg4;
-  // bit<32> debug_tmp;
   action worker_arrive() {
     /* record the work have count */
     bit<16> worker_arrive_all;
@@ -100,14 +95,10 @@ control TheIngress(inout headers hdr,
       meta.opcode = 0;
       worker_arrive_tmp = worker_arrive_tmp | ((bit<8>)1 << hdr.sml.rank);
     }
-    // debug_reg.write(0, (bit<32>)worker_arrive_prev);
-    // debug_reg2.write(0, (bit<32>)worker_arrive_tmp);
     /* clean the register only if other chunk also arrive */
     if((worker_arrive_tmp & worker_arrive_prev) == 0xff){
       worker_arrive_prev = mask;
     }
-    // debug_reg3.write(0, (bit<32>)worker_arrive_prev);
-    // debug_reg4.write(0, (bit<32>)mask);
     if(hdr.sml.chunk_id == 0){
       worker_arrive_all = worker_arrive_prev ++ worker_arrive_tmp;
     }else{
@@ -117,12 +108,6 @@ control TheIngress(inout headers hdr,
     worker_arrive_reg.write(0, worker_arrive_all);
     /* store the arrive data to metadata */
     meta.worker_arrive = worker_arrive_all;
-
-    // if ((worker_arrive_tmp | mask) == (bit<8>)0xff) {
-    //   meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = true;
-    // } else {
-    //   meta.worker_arrival[hdr.sml.chunk_id].all_worker_arrive = false;
-    // }
 
   }
   action sml_md_set() {
@@ -244,16 +229,10 @@ control TheEgress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
   action sml_udp_send(ipv4_addr_t ip_sw, ipv4_addr_t ip_hst, mac_addr_t mac_sw, mac_addr_t mac_hst) {
-    // ipv4_addr_t ipv4_addr_tmp;
-    // ipv4_addr_tmp = hdr.ipv4.srcAddr;
-    // hdr.ipv4.srcAddr = hdr.ipv4.dstAddr;
-    // hdr.ipv4.dstAddr = ipv4_addr_tmp;
     hdr.ipv4.srcAddr = ip_sw;
     hdr.ipv4.dstAddr = ip_hst;
     hdr.eth.srcAddr = mac_sw;
     hdr.eth.dstAddr = mac_hst;
-    /* should count real checksum, just testing */
-    // hdr.udp.checksum = 0;
   }
   table tbl_sml_udp {
     actions = {
@@ -267,7 +246,6 @@ control TheEgress(inout headers hdr,
     default_action = NoAction();
   }
   apply {
-    /* TODO: Implement me (if needed) */
     if(hdr.udp.isValid() && hdr.sml.isValid()){
       tbl_sml_udp.apply();
     }
@@ -338,9 +316,6 @@ control TheChecksumComputation(inout headers  hdr, inout metadata meta) {
 
 control TheDeparser(packet_out packet, in headers hdr) {
   apply {
-    // packet.emit(hdr.eth);
-    // packet.emit(hdr.ipv4);
-    // packet.emit(hdr.udp);
     packet.emit(hdr);
   }
 }

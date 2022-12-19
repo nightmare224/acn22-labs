@@ -63,17 +63,9 @@ def AllReduce(soc, rank, data, result):
     This function is blocking, i.e. only returns with a result or error
     """
 
-    # NOTE: Do not send/recv directly to/from the socket.
-    #       Instead, please use the functions send() and receive() from lib/comm.py
-    #       We will use modified versions of these functions to test your program
-    #
-    #       You may use the functions unreliable_send() and unreliable_receive()
-    #       to test how your solution handles dropped/delayed packets
     for i in range(len(data) // CHUNK_SIZE):
-    # for i in range(2):
         payload = bytearray()
         for num in data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)]:
-        # for num in [1] * CHUNK_SIZE:
             payload.extend(pack("!I", num))
         pkt_snd = bytes(
             SwitchML(rank=rank, num_workers=NUM_WORKERS, chunk_id=i&0x1) /
@@ -81,17 +73,16 @@ def AllReduce(soc, rank, data, result):
         )
         while 1:
             soc.settimeout(1.0)
-            unreliable_send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT), 0)
-            # send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT))
+            unreliable_send(soc, pkt_snd, (DST_IP_ADDR, DST_PORT), 0, 0.3)
             try:
-                # pkt_recv, _ = unreliable_receive(soc, len(pkt_snd), 0)
-                pkt_recv, _ = receive(soc, len(pkt_snd))
+                pkt_recv, _ = unreliable_receive(soc, len(pkt_snd), p=0.3)
+                # chunk id match
                 if SwitchML(pkt_snd).chunk_id == SwitchML(pkt_recv).chunk_id:
                     break
             except timeout:
-                print(f"TIMEOUT {i}")
                 pass
-        # byte_data = SwitchML(UDP(IP(Ether(pkt_recv).payload).payload).payload).payload.load
+                # print(f"TIMEOUT {i}")
+
         byte_data = SwitchML(pkt_recv).payload.load
         for j, num in enumerate(iter_unpack("!I", byte_data)):
             result[i * CHUNK_SIZE + j] = num[0]
@@ -102,10 +93,7 @@ def main():
 
     s = socket(family=AF_INET, type=SOCK_DGRAM)
     s.bind((SRC_IP_ADDR, SRC_PORT))
-    # NOTE: This socket will be used for all AllReduce calls.
-    #       Feel free to go with a different design (e.g. multiple sockets)
-    #       if you want to, but make sure the loop below still works
-
+    
     Log("Started...")
     for i in range(NUM_ITER):
         # You may want to 'fix' num_elem for debugging

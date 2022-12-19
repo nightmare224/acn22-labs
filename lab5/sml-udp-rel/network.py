@@ -7,14 +7,10 @@ from mininet.cli import CLI
 from mininet.topo import Topo
 from config import NUM_WORKERS
 
-NUM_WORKERS = 2  # TODO: Make sure your program can handle larger values
-
 
 class SMLTopo(Topo):
     def __init__(self, **opts):
         Topo.__init__(self, **opts)
-        # TODO: Implement me. Feel free to modify the constructor signature
-        # NOTE: Make sure worker names are consistent with RunWorkers() below
 
     def build(self):
         switch = self.addSwitch("s1")
@@ -25,7 +21,7 @@ class SMLTopo(Topo):
                 ip=f"10.0.{i+1}.1/24",
                 defaultRoute=f"via 10.0.{i+1}.0",
             )
-            link = self.addLink(switch, host)
+            self.addLink(switch, host)
 
 
 def RunWorkers(net):
@@ -68,15 +64,12 @@ def RunControlPlane(net):
         rsp = host.node.cmd('route -n')
         gw = rsp.split("\n")[2].split(' ')[0]
         port_to_ip[port_no] = gw
-        # switch.setIP(f"{gw}/24")
-        # switch.updateIP()
 
     switch = net.switches[0]
     ports = []
     for intf, port_no in switch.ports.items():
         if intf.name.startswith(switch.name):
             ports.append(port_no)
-            # print(key.mac, key.ip)
             # add arp reply table
             switch.insertTableEntry(
                 table_name="TheIngress.arp.tbl_arp",
@@ -97,10 +90,9 @@ def RunControlPlane(net):
                 },
             )
     switch.addMulticastGroup(mgid=1, ports=ports)
-    switch.printTableEntries()
 
 
-topo = SMLTopo()  # TODO: Create an SMLTopo instance
+topo = SMLTopo()
 net = P4Mininet(program="p4/main.p4", topo=topo)
 net.run_control_plane = lambda: RunControlPlane(net)
 net.run_workers = lambda: RunWorkers(net)

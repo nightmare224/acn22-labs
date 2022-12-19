@@ -128,7 +128,9 @@ control TheIngress(inout headers hdr,
       arp.apply(hdr, standard_metadata);
     }
     if (hdr.sml.isValid()) {
-      sml_ctrl.apply();
+      @atomic{
+        sml_ctrl.apply();
+      }
       elem00_ctrl.apply(hdr.vector.elem00, hdr.vector.elem00, meta, standard_metadata);
       elem01_ctrl.apply(hdr.vector.elem01, hdr.vector.elem01, meta, standard_metadata);
       elem02_ctrl.apply(hdr.vector.elem02, hdr.vector.elem02, meta, standard_metadata);
@@ -169,16 +171,10 @@ control TheEgress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
   action sml_udp_send(ipv4_addr_t ip_sw, ipv4_addr_t ip_hst, mac_addr_t mac_sw, mac_addr_t mac_hst) {
-    // ipv4_addr_t ipv4_addr_tmp;
-    // ipv4_addr_tmp = hdr.ipv4.srcAddr;
-    // hdr.ipv4.srcAddr = hdr.ipv4.dstAddr;
-    // hdr.ipv4.dstAddr = ipv4_addr_tmp;
     hdr.ipv4.srcAddr = ip_sw;
     hdr.ipv4.dstAddr = ip_hst;
     hdr.eth.srcAddr = mac_sw;
     hdr.eth.dstAddr = mac_hst;
-    /* should count real checksum, just testing */
-    // hdr.udp.checksum = 0;
   }
   table tbl_sml_udp {
     actions = {
@@ -192,7 +188,6 @@ control TheEgress(inout headers hdr,
     default_action = NoAction();
   }
   apply {
-    /* TODO: Implement me (if needed) */
     if(hdr.udp.isValid() && hdr.sml.isValid()){
       tbl_sml_udp.apply();
     }
@@ -247,9 +242,6 @@ control TheChecksumComputation(inout headers  hdr, inout metadata meta) {
 
 control TheDeparser(packet_out packet, in headers hdr) {
   apply {
-    // packet.emit(hdr.eth);
-    // packet.emit(hdr.ipv4);
-    // packet.emit(hdr.udp);
     packet.emit(hdr);
   }
 }
